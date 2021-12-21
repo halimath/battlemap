@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-icons {
+    vertical-align: middle;
+}
+
+button.selected {
+    @apply border-2 border-white rounded-md
+}
+
+battlemap-editor,
+battlemap-viewer {
+    @apply grow-[4]
+}

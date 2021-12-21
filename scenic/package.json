@@ -1,0 +1,12 @@
+{
+  "name": "@halimath/scenic",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "main": "index.ts",
+  "devDependencies": {
+    "typescript": "^4.4.4",
+    "vite": "^2.6.13"
+  }
+}

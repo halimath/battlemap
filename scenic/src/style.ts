@@ -1,0 +1,201 @@
+export class Color {
+    static fromRGBBytes (r: number, g: number, b: number, a: number = 1): Color {
+        return new Color(r / 255, g / 255, b / 255, a)
+    }
+
+    static parseHex (c: string): Color {
+        if (c.charAt(0) !== "#") {
+            throw `Invalid color hex string: '${c}'`
+        }
+
+        let parts = c.substring(1).split("")
+        if (parts.length === 3) {
+            parts = parts.reduce((a, c) => a.concat([c, c]), [] as Array<string>)
+        }
+
+        if (parts.length !== 6) {
+            throw `Invalid color hex string: '${c}'`
+        }
+
+        return Color.fromRGBBytes(parseInt(parts[0] + parts[1], 16), parseInt(parts[2] + parts[3], 16), parseInt(parts[4] + parts[5], 16))
+    }
+
+    constructor (
+        public readonly red: number,
+        public readonly green: number,
+        public readonly blue: number,
+        public readonly alpha: number = 1.0,
+    ) {
+        if (red < 0 || red > 1) {
+            throw `invalid red component: ${this.red}`
+        }
+        if (green < 0 || green > 1) {
+            throw `invalid green component: ${this.green}`
+        }
+        if (blue < 0 || blue > 1) {
+            throw `invalid blue component: ${this.blue}`
+        }
+        if (alpha < 0 || alpha > 1) {
+            throw `invalid alpha component: ${this.alpha}`
+        }
+    }
+
+    lighten(ratio: number): Color {
+        return new Color(
+            Math.min(this.red + this.red * ratio, 1.0),
+            Math.min(this.green + this.green * ratio, 1.0),
+            Math.min(this.blue + this.blue * ratio, 1.0),
+            this.alpha,
+        )
+    }
+
+    darken(ratio: number): Color {
+        return new Color(
+            Math.max(this.red - this.red * ratio, 0),
+            Math.max(this.green - this.green * ratio, 0),
+            Math.max(this.blue - this.blue * ratio, 0),
+            this.alpha,
+        )
+    }
+
+    withAlpha(alpha: number): Color {
+        if (alpha < 0 || alpha > 1) {
+            throw `invalid alpha component: ${this.alpha}`
+        }
+
+        return new Color(this.red, this.green, this.blue, alpha)
+    }
+
+    toCSS(): string {
+        return `rgba(${this.red * 255}, ${this.green * 255}, ${this.blue * 255}, ${this.alpha})`
+    }
+
+    toString(): string {
+        return this.toCSS()
+    }
+}
+
+export type ColorStyle = string | Color
+export type FillStyle = ColorStyle | CanvasGradient | CanvasPattern
+export type StrokeStyle = ColorStyle | CanvasGradient | CanvasPattern 
+export type LineCap = "butt" | "round" | "square"
+export type LineJoin = "round" | "bevel" | "miter"
+
+
+export interface StyleOptions {
+    fillStyle?: FillStyle
+
+    strokeStyle?: StrokeStyle
+    lineWidth?: number
+    lineCap?: LineCap
+    lineJoin?: LineJoin
+    lineDash?: number | Array<number>
+
+    shadowOffsetX?: number
+    shadowOffsetY?: number
+    shadowBlur?: number
+    shadowColor?: ColorStyle
+}
+
+export class Style {
+    static copyOptions<F extends StyleOptions, T extends StyleOptions> (from: F, to: T): T {
+        to.fillStyle = from.fillStyle
+        
+        to.strokeStyle = from.strokeStyle
+        to.lineWidth = from.lineWidth
+        to.lineCap = from.lineCap
+        to.lineJoin = from.lineJoin
+        to.lineDash = from.lineDash
+        
+        to.shadowOffsetX = from.shadowOffsetX
+        to.shadowOffsetY = from.shadowOffsetY
+        to.shadowBlur = from.shadowBlur
+        to.shadowColor = from.shadowColor
+
+        return to
+    }
+
+    static create(opts?: StyleOptions): Style {
+        return new Style(
+            opts?.fillStyle ?? null,
+            opts?.strokeStyle ?? null,
+            opts?.lineWidth ?? null,
+            opts?.lineCap ?? null,
+            opts?.lineJoin ?? null,
+            opts?.lineDash ?? null,
+            opts?.shadowOffsetX ?? null,
+            opts?.shadowOffsetY ?? null,
+            opts?.shadowBlur ?? null,
+            opts?.shadowColor ?? null,
+        )
+    }
+
+    public readonly lineDash: Array<number> | null
+
+    constructor(
+        public readonly fillStyle: FillStyle | null,
+        public readonly strokeStyle: StrokeStyle | null,
+        public readonly lineWidth: number| null,
+        public readonly lineCap: LineCap| null,
+        public readonly lineJoin: LineJoin| null,
+        lineDash: number | Array<number> | null,
+        public readonly shadowOffsetX: number| null,
+        public readonly shadowOffsetY: number| null,
+        public readonly shadowBlur: number| null,
+        public readonly shadowColor: ColorStyle | null,    
+    ) { 
+        this.lineDash = (typeof lineDash === "number") ? [lineDash] : lineDash
+    }
+
+    prepare(ctx: CanvasRenderingContext2D) {
+        if (this.fillStyle !== null) {
+            ctx.fillStyle = this.fillStyle.toString()
+        }
+
+        if (this.strokeStyle !== null) {
+            ctx.strokeStyle = this.strokeStyle.toString()
+        }
+
+        if (this.lineWidth) {
+            ctx.lineWidth = this.lineWidth
+        }
+
+        if (this.lineDash !== null) {
+            ctx.setLineDash(this.lineDash)
+        }
+
+        if (this.lineCap) {
+            ctx.lineCap = this.lineCap
+        }
+
+        if (this.lineJoin) {
+            ctx.lineJoin = this.lineJoin
+        }
+
+        if (this.shadowOffsetX) {
+            ctx.shadowOffsetX = this.shadowOffsetX
+        }
+
+        if (this.shadowOffsetY) {
+            ctx.shadowOffsetY = this.shadowOffsetY
+        }
+
+        if (this.shadowBlur) {
+            ctx.shadowBlur = this.shadowBlur
+        }
+
+        if (this.shadowColor) {
+            ctx.shadowColor = this.shadowColor.toString()
+        }
+    }
+
+    apply(ctx: CanvasRenderingContext2D) {
+        if (this.fillStyle) {
+            ctx.fill()
+        }
+
+        if (this.strokeStyle) {
+            ctx.stroke()
+        }
+    }
+}

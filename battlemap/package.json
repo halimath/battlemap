@@ -1,0 +1,16 @@
+{
+  "name": "@halimath/battlemap",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc && vite build"
+  },
+  "main": "index.ts",
+  "dependencies": {
+    "@weccoframework/core": "^0.21.2",
+    "@halimath/scenic": "../scenic"
+  },  
+  "devDependencies": {
+    "typescript": "^4.4.4",
+    "vite": "^2.6.13"
+  }
+}
