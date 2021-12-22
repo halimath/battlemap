@@ -1,9 +1,17 @@
 import * as wecco from "@weccoframework/core"
 import * as scenic from "@halimath/scenic"
 
-import { BattleMap } from "./core"
+import { BattleMap, createScene } from "./core"
 
-export const BattleMapViewer = wecco.define("battlemap-viewer", (data: BattleMap, ctx: wecco.RenderContext): wecco.ElementUpdate => {
+export interface ViewerData extends BattleMap {
+    viewport?: scenic.Viewport
+}
+
+export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: wecco.RenderContext): wecco.ElementUpdate => {
+    data.viewport = data.viewport ?? scenic.Viewport.create({
+        origin: [5, 5],
+    })
+
     const createScenic = (e: Event) => {
         const canvas = e.target as HTMLCanvasElement
 
@@ -11,8 +19,10 @@ export const BattleMapViewer = wecco.define("battlemap-viewer", (data: BattleMap
 
         if (s !== null) {
             s.scene = createScene(data)
+            s.viewport = data.viewport!
             return
         }
+
         scenic.Scenic.create({
             canvas: canvas,
             scene: createScene(data),
@@ -20,10 +30,13 @@ export const BattleMapViewer = wecco.define("battlemap-viewer", (data: BattleMap
             select: false,
             resize: true,
             zoom: true,
-            viewport: scenic.Viewport.create({
-                origin: [5, 5],
-            }),
+            viewport: data.viewport!
         })
+            .on("viewportChanged", evt => {
+                data.viewport = evt.source.viewport
+                // No need to trigger a repaint here. Simply update our element's model to reflect the
+                // changes made by scenic.
+            })
     }
 
     return wecco.shadow(wecco.html`
@@ -41,20 +54,4 @@ export const BattleMapViewer = wecco.define("battlemap-viewer", (data: BattleMap
     `)
 })
 
-function createScene(data: BattleMap): scenic.Scene {
-    return new scenic.Scene(
-        new scenic.Layer(
-            "background",
-            ...data.background?.map(s => s.createSceneElement()) ?? []
-        ),
-        new scenic.Layer(
-            "explanations",
-            ...data.explanations?.map(s => s.createSceneElement()) ?? []
-        ),
-        new scenic.Layer(
-            "tokens",
-            ...data.tokens?.map(s => s.createSceneElement()) ?? []
-        ),
-    )
-}
 

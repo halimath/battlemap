@@ -1,12 +1,10 @@
-import { BaseSceneElement, randomId } from "../scene"
+import { Paintable } from "../scene"
 import { Point, Bounds, XY, Dimension } from "../core"
 import { Style, StyleOptions } from "../style"
 
-export interface PathBaseOptions extends StyleOptions {
-    id?: string
-    at: Point | XY
+export interface PathBaseOptions {    
     closed?: boolean
-    movable?: boolean
+    style?: StyleOptions
 }
 
 export interface PathOptions extends PathBaseOptions {    
@@ -16,30 +14,23 @@ export interface PathOptions extends PathBaseOptions {
 
 export interface RectangleOptions extends PathBaseOptions {
     size: Dimension | XY
-    selectable?: boolean
 }
 
 export interface EllipseOptions extends PathBaseOptions {
     size: Dimension | XY
-    selectable?: boolean
     startAngle?: number
     endAngle?: number
     rotation?: number
 }
 
-export class Path extends BaseSceneElement {
+export class Path implements Paintable {
     static rectangle (opts: RectangleOptions): Path {
         const dim = Dimension.create(opts.size)
         const pathOpts: PathOptions = {
-            id: opts.id,
-            at: opts.at,
             d: [0, [0, dim.y], [dim.x, dim.y], [dim.x, 0]],
             closed: true,
-            movable: opts.movable,
-            selectionBounds: opts.selectable ? new Bounds(Point.origin, new Point(dim.x, dim.y)) : null,
+            style: opts.style,
         }
-
-        Style.copyOptions(opts, pathOpts)
         
         return this.create(pathOpts)
     }
@@ -59,14 +50,10 @@ export class Path extends BaseSceneElement {
         )
 
         const pathOpts: PathOptions = {
-            id: opts.id,
-            at: opts.at,
             d: p,
             closed: true,
-            movable: opts.movable,
-            selectionBounds: opts.selectable ? new Bounds(Point.origin, new Point(dim.x, dim.y)) : null,
+            style: opts.style,
         }
-        Style.copyOptions(opts, pathOpts)
 
         return this.create(pathOpts)
     }
@@ -92,29 +79,19 @@ export class Path extends BaseSceneElement {
         }
 
         return new Path(
-            opts.id ?? randomId(),
-            Point.create(opts.at),
             path,
             opts.closed ?? false,
-            Style.create(opts),
-            opts.selectionBounds ?? null,
-            opts.movable ?? false,
+            Style.create(opts.style),
         )
     }
 
     constructor (
-        id: string,
-        at: Point,
         public readonly path: Path2D, 
         public readonly closed: boolean,
         public readonly style: Style,
-        private readonly selectionBounds: Bounds | null, 
-        movable: boolean,
-        ) {
-            super(id, at, !!selectionBounds, movable)
-        }
+        ) {}
 
-    drawTranslated(ctx: CanvasRenderingContext2D): Bounds | null {
+        repaint(ctx: CanvasRenderingContext2D): void {            
         this.style.prepare(ctx)        
 
         if (this.style.fillStyle) {
@@ -124,21 +101,5 @@ export class Path extends BaseSceneElement {
         if (this.style.strokeStyle) {
             ctx.stroke(this.path)
         }
-
-        return this.selectionBounds
     }
-
-    contains (ctx: CanvasRenderingContext2D, p: Point): boolean {
-        return this.selectionBounds?.move(Dimension.fromOrigin(this.at)).contains(p) ?? false
-    }
-
-    // contains (ctx: CanvasRenderingContext2D, p: Point): boolean {
-    //     try {
-    //         ctx.save()
-    //         ctx.translate(this.at.x, this.at.y)
-    //         return ctx.isPointInPath(this.path, p.x, p.y)
-    //     } finally {
-    //         ctx.restore()
-    //     }
-    // }
 }

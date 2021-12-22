@@ -1,9 +1,9 @@
 export class Color {
-    static fromRGBBytes (r: number, g: number, b: number, a: number = 1): Color {
+    static fromRGBBytes(r: number, g: number, b: number, a: number = 1): Color {
         return new Color(r / 255, g / 255, b / 255, a)
     }
 
-    static parseHex (c: string): Color {
+    static parseHex(c: string): Color {
         if (c.charAt(0) !== "#") {
             throw `Invalid color hex string: '${c}'`
         }
@@ -20,7 +20,7 @@ export class Color {
         return Color.fromRGBBytes(parseInt(parts[0] + parts[1], 16), parseInt(parts[2] + parts[3], 16), parseInt(parts[4] + parts[5], 16))
     }
 
-    constructor (
+    constructor(
         public readonly red: number,
         public readonly green: number,
         public readonly blue: number,
@@ -77,10 +77,11 @@ export class Color {
 
 export type ColorStyle = string | Color
 export type FillStyle = ColorStyle | CanvasGradient | CanvasPattern
-export type StrokeStyle = ColorStyle | CanvasGradient | CanvasPattern 
+export type StrokeStyle = ColorStyle | CanvasGradient | CanvasPattern
 export type LineCap = "butt" | "round" | "square"
 export type LineJoin = "round" | "bevel" | "miter"
-
+export type TextAlign = "start" | "end" | "left" | "right" | "center"
+export type TextDirection = "ltr" | "rtl"
 
 export interface StyleOptions {
     fillStyle?: FillStyle
@@ -95,26 +96,14 @@ export interface StyleOptions {
     shadowOffsetY?: number
     shadowBlur?: number
     shadowColor?: ColorStyle
+
+    fontSize?: number
+    fontFamily?: string
+    textAlign?: TextAlign
+    direction?: TextDirection
 }
 
 export class Style {
-    static copyOptions<F extends StyleOptions, T extends StyleOptions> (from: F, to: T): T {
-        to.fillStyle = from.fillStyle
-        
-        to.strokeStyle = from.strokeStyle
-        to.lineWidth = from.lineWidth
-        to.lineCap = from.lineCap
-        to.lineJoin = from.lineJoin
-        to.lineDash = from.lineDash
-        
-        to.shadowOffsetX = from.shadowOffsetX
-        to.shadowOffsetY = from.shadowOffsetY
-        to.shadowBlur = from.shadowBlur
-        to.shadowColor = from.shadowColor
-
-        return to
-    }
-
     static create(opts?: StyleOptions): Style {
         return new Style(
             opts?.fillStyle ?? null,
@@ -127,6 +116,10 @@ export class Style {
             opts?.shadowOffsetY ?? null,
             opts?.shadowBlur ?? null,
             opts?.shadowColor ?? null,
+            opts?.fontSize ?? null,
+            opts?.fontFamily ?? null,
+            opts?.textAlign ?? null,
+            opts?.direction ?? null,
         )
     }
 
@@ -135,15 +128,19 @@ export class Style {
     constructor(
         public readonly fillStyle: FillStyle | null,
         public readonly strokeStyle: StrokeStyle | null,
-        public readonly lineWidth: number| null,
-        public readonly lineCap: LineCap| null,
-        public readonly lineJoin: LineJoin| null,
+        public readonly lineWidth: number | null,
+        public readonly lineCap: LineCap | null,
+        public readonly lineJoin: LineJoin | null,
         lineDash: number | Array<number> | null,
-        public readonly shadowOffsetX: number| null,
-        public readonly shadowOffsetY: number| null,
-        public readonly shadowBlur: number| null,
-        public readonly shadowColor: ColorStyle | null,    
-    ) { 
+        public readonly shadowOffsetX: number | null,
+        public readonly shadowOffsetY: number | null,
+        public readonly shadowBlur: number | null,
+        public readonly shadowColor: ColorStyle | null,
+        public readonly fontSize: number | null,
+        public readonly fontFamily: string | null,
+        public readonly textAlign: TextAlign | null,
+        public readonly direction: TextDirection | null,
+    ) {
         this.lineDash = (typeof lineDash === "number") ? [lineDash] : lineDash
     }
 
@@ -186,6 +183,18 @@ export class Style {
 
         if (this.shadowColor) {
             ctx.shadowColor = this.shadowColor.toString()
+        }
+
+        if (this.fontFamily || this.fontSize) {
+            ctx.font = `${this.fontSize ?? 10}px ${this.fontFamily ?? "sans-serif"}`
+        }
+
+        if (this.textAlign) {
+            ctx.textAlign = this.textAlign
+        }
+
+        if (this.direction) {
+            ctx.direction = this.direction
         }
     }
 

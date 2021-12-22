@@ -1,108 +1,100 @@
+import { Point, XY } from "./core"
 import { Style } from "./style"
-import { Bounds, Point, XY } from "./core"
 
-export interface SceneElement {
-    readonly id: string
-    at: Point
-    selectable: boolean
-    movable: boolean
-    selected: boolean
-
-    draw(ctx: CanvasRenderingContext2D, selectionStyles: Style): void
-    contains (ctx: CanvasRenderingContext2D, p: Point): boolean
+/**
+ * `Paintable` defines the interface for elements that can be repainted on a `<canvas>` element. The element
+ * should repaint itself using (0, 0) as the reference. A context translation as well as scaling has been
+ * applied before.
+ */
+export interface Paintable {
+    repaint(ctx: CanvasRenderingContext2D): void
 }
 
-export interface SceneElementGroupOptions {
-    at: Point | XY
+export type PositionedPaintableOptions = Paintable | PositionedPaintable | [Point | XY, Paintable]
+
+export class PositionedPaintable {
+    static create(opts: PositionedPaintableOptions): PositionedPaintable {
+        if (opts instanceof PositionedPaintable) {
+            return opts
+        }
+
+        if (Array.isArray(opts)) {
+            return new PositionedPaintable(Point.create(opts[0]), opts[1])
+        }
+
+        return new PositionedPaintable(Point.origin, opts)
+    }
+
+    constructor(readonly at: Point, readonly p: Paintable) { }
+
+    repaint(ctx: CanvasRenderingContext2D): void {
+        try {
+            ctx.save()
+            ctx.translate(this.at.x, this.at.y)
+            this.p.repaint(ctx)
+        } finally {
+            ctx.restore()
+        }
+    }
+}
+
+export interface SceneElementOptions {
     id?: string
-    selectable?: boolean
-    movable?: boolean    
+    at: Point | XY
+    outline?: Path2D | null
+    movable?: boolean
+    paintables: Array<PositionedPaintableOptions> | PositionedPaintableOptions
 }
 
-export class SceneElementGroup implements SceneElement {
-    static create(opts: SceneElementGroupOptions, ...elements: Array<SceneElement>): SceneElementGroup {
-        return new SceneElementGroup(
+export class SceneElement {
+    static create(opts: SceneElementOptions): SceneElement {
+        if (!Array.isArray(opts.paintables)) {
+            opts.paintables = [ opts.paintables ]
+        }
+        return new SceneElement(
             opts.id ?? randomId(),
             Point.create(opts.at),
-            opts.selectable ?? false,
+            opts.outline ? true : false,
             opts.movable ?? false,
             false,
-            ...elements
+            opts.outline ?? null,
+            (opts.paintables as Array<PositionedPaintableOptions>).map(PositionedPaintable.create),
         )
     }
 
-    public readonly elements: Array<SceneElement>
-    
-    constructor(       
-        public readonly id: string, 
+    constructor(
+        public readonly id: string,
         public at: Point,
         public selectable: boolean,
         public movable: boolean,
         public selected: boolean,
-        ...elements: Array<SceneElement>
-    ) {
-        this.elements = elements
-    }
+        public outline: Path2D | null,
+        public paintables: Array<PositionedPaintable>,
+    ) { }
 
-    draw(ctx: CanvasRenderingContext2D, selectionStyles: Style): void {
-        try {
-            ctx.save()
-            ctx.translate(this.at.x, this.at.y) 
-                       
-            this.elements.forEach(e => e.draw(ctx, selectionStyles))
-        } finally {
-            ctx.restore()
-        }
-    }
-
-    contains (ctx: CanvasRenderingContext2D, p: Point): boolean {
-        for (let e of this.elements) {
-            if (e.contains(ctx, p)) {
-                return true
-            }
-        }
-
-        return false
-    }
-
-}
-
-export abstract class BaseSceneElement implements SceneElement {
-    public selected = false
-
-    protected constructor(
-        public id: string,
-        public at: Point,
-        public selectable: boolean,
-        public movable: boolean,
-    ) {}
-
-    draw(ctx: CanvasRenderingContext2D, selectionStyles: Style): void {
+    repaint(ctx: CanvasRenderingContext2D, selectionStyle: Style): void {
         try {
             ctx.save()
             ctx.translate(this.at.x, this.at.y)
+            this.paintables.forEach(p => p.repaint(ctx))
 
-            const selectionBounds = this.drawTranslated(ctx)
-            
-            if (this.selected) {
-                if (!selectionBounds) {
-                    console.error(`Invalid state: selected element does not provide selectionBounds: ${this}`)
-                    return
-                }
-            
-                selectionStyles.prepare(ctx)
-
-                const b = selectionBounds.resize(10)
-                ctx.strokeRect(b.upperLeft.x, b.upperLeft.y, b.width, b.height)
-            }        
+            if (this.selected && this.outline) {
+                selectionStyle.prepare(ctx)
+                ctx.stroke(this.outline)
+            }
         } finally {
             ctx.restore()
         }
-    } 
+    }
 
-    protected abstract drawTranslated (ctx: CanvasRenderingContext2D): Bounds | null
+    contains(ctx: CanvasRenderingContext2D, p: Point): boolean {
+        if (!this.outline) {
+            return false
+        }
 
-    abstract contains (ctx: CanvasRenderingContext2D, p: Point): boolean
+        const pt = p.translate(-this.at.x, -this.at.y)
+        return ctx.isPointInPath(this.outline, pt.x, pt.y)
+    }
 }
 
 export class Layer {
@@ -114,9 +106,9 @@ export class Layer {
         this.elements = elements
     }
 
-    draw(ctx: CanvasRenderingContext2D, selectionStyle: Style): void {
+    repaint(ctx: CanvasRenderingContext2D, selectionStyle: Style): void {
         this.elements.forEach(s => {
-            s.draw(ctx, selectionStyle)
+            s.repaint(ctx, selectionStyle)
         })
     }
 
@@ -161,12 +153,12 @@ export class Scene {
         return null
     }
 
-    findLayer (id: string): Layer | null {
+    findLayer(id: string): Layer | null {
         return this.layers.find(l => l.id === id) ?? null
     }
 
-    draw(ctx: CanvasRenderingContext2D, selectionStyle: Style): void {
-        this.layers.forEach(l => l.draw(ctx, selectionStyle))
+    repaint(ctx: CanvasRenderingContext2D, selectionStyle: Style): void {
+        this.layers.forEach(l => l.repaint(ctx, selectionStyle))
     }
 
     firstHit(ctx: CanvasRenderingContext2D, p: Point): SceneElement | null {

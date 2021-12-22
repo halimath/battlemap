@@ -78,7 +78,11 @@ export class Point {
     }
 
     move(v: Dimension) {
-        return new Point(this.x + v.x, this.y + v.y)
+        return this.translate(v.x, v.y)
+    }
+
+    translate(dx: number, dy: number): Point {
+        return new Point(this.x + dx, this.y + dy)
     }
 
     isSame(p: Point): boolean {

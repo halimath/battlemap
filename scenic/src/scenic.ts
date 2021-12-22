@@ -1,4 +1,4 @@
-import { Style } from "./style"
+import { Color, Style } from "./style"
 import { Point, Viewport } from "./core"
 import { Scene } from "./scene"
 import { EventEmitter } from "./eventemitter"
@@ -78,9 +78,11 @@ export interface ScenicEvent {
  * `DrawingFinishedEvent` defines the event's payload structure used to report when a user finished drawing.
  */
 export interface DrawingFinishedEvent extends ScenicEvent {
-    path: Path2D
-    start: Point
-    end: Point
+    /** 
+     * Contains a list of all relevant points visitied. For drawing mode "rect" this list always contains two
+     * points: start and end. For drawing mode "poly" this contains all "stops".
+     */
+    points: Array<Point>
     mode: DrawingMode
 }
 
@@ -127,9 +129,7 @@ export class Scenic {
      * @returns the `Scenic` instance
      */
     static create(opts: ScenicOptions): Scenic {
-        const canvas = (typeof opts.canvas === "string") ?
-            document.querySelector(opts.canvas) as HTMLCanvasElement :
-            opts.canvas
+        const canvas = resolve(opts.canvas)
 
         const s = new Scenic(
             canvas,
@@ -199,11 +199,20 @@ export class Scenic {
         this.repaint()
     }
 
-    /** Used internally to manage subscribed event listeners */
-    private readonly eventEmitter = new EventEmitter()
+    private _backgroundStyle: Style = Style.create({
+        fillStyle: Color.fromRGBBytes(200, 200, 200),
+    })
 
-    /** Captures the Path2D used to reflect the user's drawing while the drawing has not been submitted. */
-    private drawingPath: Path2D | null = null
+    /** Returns the `Style` to paint the background of the canvas before drawing the scene. */
+    get backgroundStyle(): Style {
+        return this._backgroundStyle
+    }
+
+    /** Sets the background style to a new value and causes a repaint. */
+    set backgroundStyle(s: Style) {
+        this._backgroundStyle = s
+        this.repaint()
+    }
 
     private constructor(
         public readonly canvas: HTMLCanvasElement,
@@ -224,6 +233,9 @@ export class Scenic {
         this.repaint()
     }
 
+    /** Used internally to manage subscribed event listeners */
+    private readonly eventEmitter = new EventEmitter()
+
     /** `on` subscribes for a drawing finished event */
     on(eventName: "drawingFinished", listener: EventListener<DrawingFinishedEvent>): Scenic
     /** `on` subscribes for a selection changed event */
@@ -238,6 +250,12 @@ export class Scenic {
         return this
     }
 
+    /** Captures the Path2D used to reflect the user's drawing while the drawing has not been submitted. */
+    private drawingPath: Path2D | null = null
+
+    /** Captures the points (in coordinate space) that have been visited during drawing */
+    private drawnPoints: Array<Point> | null = null
+
     /**
      * `repaint` requests a complete repaint of the canvas. The repaint is synchronized with browser animation
      * handling using `requestAnimationFrame`.
@@ -248,13 +266,13 @@ export class Scenic {
 
             ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
-            ctx.fillStyle = "rgb(200, 200, 200)"
+            this._backgroundStyle.prepare(ctx)
             ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
             try {
                 ctx.save()
                 this.viewport.applyTranspose(ctx)
-                this.scene.draw(ctx, this.selectionStyle)
+                this.scene.repaint(ctx, this.selectionStyle)
             } finally {
                 ctx.restore()
             }
@@ -337,10 +355,18 @@ export class Scenic {
     private interactLastCheckpoint: Point | null = null
 
     private onMouseDown = (evt: MouseEvent) => {
+        evt.preventDefault()
+        evt.stopPropagation()
+        evt.stopImmediatePropagation()
+
         this.onInteractStart(Point.fromMouseEvent(evt))
     }
 
     private onTouchStart = (evt: TouchEvent) => {
+        evt.preventDefault()
+        evt.stopPropagation()
+        evt.stopImmediatePropagation()
+
         this.onInteractStart(Point.fromTouchEvent(evt))
     }
 
@@ -349,16 +375,16 @@ export class Scenic {
         this.interactLastCheckpoint = this.interactOrigin
     }
 
-    private onMouseUp = (e: MouseEvent) => {
-        this.onInteractEnd(Point.fromMouseEvent(e))
+    private onMouseUp = (e: Event) => {
+        this.onInteractEnd(Point.fromMouseEvent(e as MouseEvent), !(e as MouseEvent).ctrlKey)
     }
 
     private onTouchEnd = () => {
         // Touchend contains an empty list of touch events, so we reuse the last submitted point here.
-        this.onInteractEnd(this.interactLastCheckpoint!)
+        this.onInteractEnd(this.interactLastCheckpoint!, false)
     }
 
-    private onInteractEnd = (p: Point) => {
+    private onInteractEnd = (p: Point, ctrlKey: boolean) => {
         if (this.interactOrigin === null) {
             return
         }
@@ -370,7 +396,7 @@ export class Scenic {
 
             if (this.select) {
                 if (this.interactOrigin?.isSame(p)) {
-                    this.handleSelection(p)
+                    this.handleSelection(p, ctrlKey)
                 } else if (this.scene.selected.length > 0) {
                     this.emit({
                         eventName: "sceneUpdated",
@@ -465,18 +491,18 @@ export class Scenic {
         this.repaint()
     }
 
-    private finishDraw(p: Point) {        
+    private finishDraw(p: Point) {
+        this.drawnPoints!.push(this.viewport.toCoordinateSpace(p))
         this.emit({
             eventName: "drawingFinished",
             source: this,
-            path: this.drawingPath,
-            start: this.viewport.toCoordinateSpace(this.interactOrigin!),
-            end: this.viewport.toCoordinateSpace(p),
-            mode: "rect",
+            mode: this.drawingMode,
+            points: this.drawnPoints,
         } as DrawingFinishedEvent)
 
         this.repaint()
         this.drawingPath = null
+        this.drawnPoints = null
     }
 
     private updateDrawingPath(currentPoint: Point) {
@@ -485,16 +511,25 @@ export class Scenic {
 
             this.drawingPath = new Path2D()
             this.drawingPath.rect(this.interactOrigin!.x, this.interactOrigin!.y, size.x, size.y)
-        } else if (this.drawingMode === "line") {
+
+            if (this.drawnPoints === null) {
+                this.drawnPoints = [ this.viewport.toCoordinateSpace(currentPoint) ]
+            }
+        } else if (this.drawingMode === "poly") {
             if (this.drawingPath === null) {
                 this.drawingPath = new Path2D()
                 this.drawingPath.moveTo(this.interactOrigin!.x, this.interactOrigin!.y)
+
+                this.drawnPoints = [ this.viewport.toCoordinateSpace(currentPoint)]
+            } else {
+                this.drawnPoints!.push(this.viewport.toCoordinateSpace(currentPoint))
             }
+
             this.drawingPath.lineTo(currentPoint.x, currentPoint.y)
         }
     }
 
-    private handleSelection(p: Point, ctrlKey?: boolean) {
+    private handleSelection(p: Point, addToSelection: boolean) {
         p = this.viewport.toCoordinateSpace(p)
 
         const ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D
@@ -503,7 +538,7 @@ export class Scenic {
         if (hit === null) {
             this.scene.unselectAll()
         } else {
-            if (!ctrlKey) {
+            if (addToSelection) {
                 this.scene.unselectAll()
             }
 

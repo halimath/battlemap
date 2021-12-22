@@ -6,7 +6,6 @@ export interface Shape {
     createSceneElement(): scenic.SceneElement
 }
 
-
 export interface BattleMap {
     background?: Array<Shape>
     explanations?: Array<Shape>
@@ -29,4 +28,21 @@ function allShapes (battleMap: BattleMap): Array<Shape> {
     shapes = shapes.concat(battleMap.tokens ?? [])
 
     return shapes
+}
+
+export function createScene(data: BattleMap): scenic.Scene {
+    return new scenic.Scene(
+        new scenic.Layer(
+            "background",
+            ...data.background?.map(s => s.createSceneElement()) ?? []
+        ),
+        new scenic.Layer(
+            "explanations",
+            ...data.explanations?.map(s => s.createSceneElement()) ?? []
+        ),
+        new scenic.Layer(
+            "tokens",
+            ...data.tokens?.map(s => s.createSceneElement()) ?? []
+        ),
+    )
 }

@@ -1,24 +1,49 @@
 import * as scenic from "@halimath/scenic"
 import { Shape } from "./core"
+import { DefaultDrawingStyle, DefaultZoneStyle, nextTokenStyle } from "./styles"
 
-const DefaultZoneColor = scenic.Color.fromRGBBytes(2, 132, 199)
-const TokenColors = [
-    scenic.Color.parseHex("#b91c1c"),
-    scenic.Color.parseHex("#a16207"),
-    scenic.Color.parseHex("#4d7c0f"),
-    scenic.Color.parseHex("#0e7490"),
-    scenic.Color.parseHex("#1d4ed8"),
-    scenic.Color.parseHex("#7e22ce"),
-    scenic.Color.parseHex("#be123c"),
-]
-let lastTokenColorIndex = 0
+export interface DrawingOptions {
+    id?: string
+    at: scenic.Point | scenic.XY
+    points: Array<scenic.Point | scenic.XY>
+    style?: scenic.StyleOptions
+}
+
+export class Drawing implements Shape {
+    static create(opts: DrawingOptions): Drawing {
+        return new Drawing(
+            opts.id ?? scenic.randomId(),
+            scenic.Point.create(opts.at),
+            opts.points.map(scenic.Point.create),
+            opts.style ?? DefaultDrawingStyle,
+        )
+    }
+
+    constructor(
+        public readonly id: string,
+        public at: scenic.Point,
+        public points: Array<scenic.Point>,
+        public style: scenic.StyleOptions,
+    ) { }
+
+    createSceneElement(): scenic.SceneElement {
+        return scenic.SceneElement.create({
+            id: this.id,
+            at: this.at,
+            paintables: scenic.Path.create({
+                d: this.points,
+                style: DefaultDrawingStyle,
+            })
+        })
+    }
+}
 
 export interface ZoneOptions {
     id?: string
     at: scenic.Point | scenic.XY
     size: scenic.Dimension | scenic.XY
     label?: string
-    color?: scenic.Color
+    style?: scenic.StyleOptions
 }
 
 export class Zone implements Shape {
@@ -28,7 +53,7 @@ export class Zone implements Shape {
             scenic.Point.create(opts.at),
             scenic.Dimension.create(opts.size),
             opts.label ?? "Zone",
-            opts.color ?? DefaultZoneColor,
+            opts.style ?? DefaultZoneStyle,
         )
     }
 
@@ -37,41 +62,34 @@ export class Zone implements Shape {
         public at: scenic.Point,
         public size: scenic.Dimension,
         public label: string,
-        public color: scenic.Color,
+        public style: scenic.StyleOptions,
     ) { }
 
     createSceneElement(): scenic.SceneElement {
-        return scenic.SceneElementGroup.create({
+        return scenic.SceneElement.create({
             id: this.id,
             at: this.at,
-        },
-            scenic.Path.rectangle({
-                id: this.id + "-rect",
-                at: [0, 0],
-                size: this.size,
-                closed: true,
-                strokeStyle: this.color,
-                lineWidth: 5,
-                lineJoin: "round",
-                lineDash: [15, 5],
-            }),
-
-            scenic.Text.create({
-                id: this.id + "-label",
-                at: [10, 25],
-                text: this.label,
-                fillStyle: this.color,
-                fontFamily: "verdana, helvetica, arial, sans-serif",
-                fontSize: 20,
-            }),
-        )
+            paintables: [
+                scenic.Path.rectangle({
+                    size: this.size,
+                    closed: true,
+                    style: this.style,
+                }),
+                [
+                    [10, 25],
+                    scenic.Text.create({
+                        text: this.label,
+                        style: this.style,                    }),
+                ],
+            ],
+        })
     }
 }
 
 export interface TokenOptions {
     id?: string,
     at: scenic.Point | scenic.XY
-    color?: scenic.Color
+    style?: scenic.StyleOptions
 }
 
 export class Token implements Shape {
@@ -79,31 +97,31 @@ export class Token implements Shape {
         return new Token(
             opts.id ?? scenic.randomId(),
             scenic.Point.create(opts.at),
-            opts.color ?? TokenColors[lastTokenColorIndex++ % TokenColors.length],
+            opts.style ?? nextTokenStyle(),
         )
     }
 
     constructor(
         public readonly id: string,
         public at: scenic.Point,
-        public color: scenic.Color,
+        public style: scenic.StyleOptions,
     ) { }
 
     createSceneElement(): scenic.SceneElement {
-        return scenic.Path.ellipse({
+        const outline = new Path2D()
+        outline.rect(0, 0, 50, 50)
+
+        return scenic.SceneElement.create({
             id: this.id,
             at: this.at,
-            size: 50,
-            closed: true,
-            strokeStyle: this.color,
-            fillStyle: this.color.lighten(0.5).withAlpha(0.5),
-            lineWidth: 5,
-            selectable: true,
+            outline: outline,
             movable: true,
-            shadowColor: "#666",
-            shadowBlur: 5,
-            shadowOffsetX: 5,
-            shadowOffsetY: 5,
+
+            paintables: scenic.Path.ellipse({
+                size: 50,
+                closed: true,
+                style: this.style,
+            })
         })
     }
 }
