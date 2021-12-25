@@ -9,7 +9,7 @@
   "devDependencies": {
     "typescript": "^4.4.4",
     "vite": "^2.6.13",
-    "@weccoframework/core": "^0.21.2",
+    "@weccoframework/core": "^0.21.3",
     "@halimath/scenic": "../scenic",
     "@halimath/battlemap": "../battlemap",
     "tailwindcss": "^3.0.4",

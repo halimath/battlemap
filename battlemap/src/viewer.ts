@@ -7,7 +7,7 @@ export interface ViewerData extends BattleMap {
     viewport?: scenic.Viewport
 }
 
-export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: wecco.RenderContext): wecco.ElementUpdate => {
+export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData): wecco.ElementUpdate => {
     data.viewport = data.viewport ?? scenic.Viewport.create({
         origin: [5, 5],
     })
@@ -15,7 +15,7 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: w
     const createScenic = (e: Event) => {
         const canvas = e.target as HTMLCanvasElement
 
-        let s = scenic.Scenic.forCanvas(canvas)
+        const s = scenic.Scenic.forCanvas(canvas)
 
         if (s !== null) {
             s.scene = createScene(data)

@@ -6,6 +6,8 @@ export const DefaultDrawingStyle: scenic.StyleOptions = {
     strokeStyle: DefaultDrawingColor,
     lineJoin: "round",
     lineWidth: 5,
+    shadowColor: DefaultDrawingColor,
+    shadowBlur: 5,
 }
 
 const DefaultZoneColor = scenic.Color.fromRGBBytes(2, 132, 199)

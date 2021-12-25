@@ -1,11 +1,11 @@
 export class Color {
-    static fromRGBBytes(r: number, g: number, b: number, a: number = 1): Color {
+    static fromRGBBytes(r: number, g: number, b: number, a = 1): Color {
         return new Color(r / 255, g / 255, b / 255, a)
     }
 
     static parseHex(c: string): Color {
         if (c.charAt(0) !== "#") {
-            throw `Invalid color hex string: '${c}'`
+            throw new Error(`Invalid color hex string: '${c}'`)
         }
 
         let parts = c.substring(1).split("")
@@ -14,7 +14,7 @@ export class Color {
         }
 
         if (parts.length !== 6) {
-            throw `Invalid color hex string: '${c}'`
+            throw new Error(`Invalid color hex string: '${c}'`)
         }
 
         return Color.fromRGBBytes(parseInt(parts[0] + parts[1], 16), parseInt(parts[2] + parts[3], 16), parseInt(parts[4] + parts[5], 16))
@@ -27,16 +27,16 @@ export class Color {
         public readonly alpha: number = 1.0,
     ) {
         if (red < 0 || red > 1) {
-            throw `invalid red component: ${this.red}`
+            throw new Error(`invalid red component: ${this.red}`)
         }
         if (green < 0 || green > 1) {
-            throw `invalid green component: ${this.green}`
+            throw new Error(`invalid green component: ${this.green}`)
         }
         if (blue < 0 || blue > 1) {
-            throw `invalid blue component: ${this.blue}`
+            throw new Error(`invalid blue component: ${this.blue}`)
         }
         if (alpha < 0 || alpha > 1) {
-            throw `invalid alpha component: ${this.alpha}`
+            throw new Error(`invalid alpha component: ${this.alpha}`)
         }
     }
 
@@ -60,7 +60,7 @@ export class Color {
 
     withAlpha(alpha: number): Color {
         if (alpha < 0 || alpha > 1) {
-            throw `invalid alpha component: ${this.alpha}`
+            throw new Error(`invalid alpha component: ${this.alpha}`)
         }
 
         return new Color(this.red, this.green, this.blue, alpha)
@@ -76,20 +76,17 @@ export class Color {
 }
 
 export type ColorStyle = string | Color
-export type FillStyle = ColorStyle | CanvasGradient | CanvasPattern
-export type StrokeStyle = ColorStyle | CanvasGradient | CanvasPattern
-export type LineCap = "butt" | "round" | "square"
-export type LineJoin = "round" | "bevel" | "miter"
-export type TextAlign = "start" | "end" | "left" | "right" | "center"
-export type TextDirection = "ltr" | "rtl"
+export type FillOrStrokeStyle = ColorStyle | CanvasGradient | CanvasPattern
+export type FillStyle = FillOrStrokeStyle
+export type StrokeStyle = FillOrStrokeStyle
 
 export interface StyleOptions {
     fillStyle?: FillStyle
 
     strokeStyle?: StrokeStyle
     lineWidth?: number
-    lineCap?: LineCap
-    lineJoin?: LineJoin
+    lineCap?: CanvasLineCap
+    lineJoin?: CanvasLineJoin
     lineDash?: number | Array<number>
 
     shadowOffsetX?: number
@@ -99,12 +96,16 @@ export interface StyleOptions {
 
     fontSize?: number
     fontFamily?: string
-    textAlign?: TextAlign
-    direction?: TextDirection
+    textAlign?: CanvasTextAlign
+    direction?: CanvasDirection
 }
 
 export class Style {
-    static create(opts?: StyleOptions): Style {
+    static create(opts?: StyleOptions | Style): Style {
+        if (opts && (opts instanceof Style)) {
+            return opts
+        }
+        
         return new Style(
             opts?.fillStyle ?? null,
             opts?.strokeStyle ?? null,
@@ -126,11 +127,11 @@ export class Style {
     public readonly lineDash: Array<number> | null
 
     constructor(
-        public readonly fillStyle: FillStyle | null,
-        public readonly strokeStyle: StrokeStyle | null,
+        public readonly fillStyle: FillOrStrokeStyle | null,
+        public readonly strokeStyle: FillOrStrokeStyle | null,
         public readonly lineWidth: number | null,
-        public readonly lineCap: LineCap | null,
-        public readonly lineJoin: LineJoin | null,
+        public readonly lineCap: CanvasLineCap | null,
+        public readonly lineJoin: CanvasLineJoin | null,
         lineDash: number | Array<number> | null,
         public readonly shadowOffsetX: number | null,
         public readonly shadowOffsetY: number | null,
@@ -138,19 +139,19 @@ export class Style {
         public readonly shadowColor: ColorStyle | null,
         public readonly fontSize: number | null,
         public readonly fontFamily: string | null,
-        public readonly textAlign: TextAlign | null,
-        public readonly direction: TextDirection | null,
+        public readonly textAlign: CanvasTextAlign | null,
+        public readonly direction: CanvasDirection | null,
     ) {
         this.lineDash = (typeof lineDash === "number") ? [lineDash] : lineDash
     }
 
     prepare(ctx: CanvasRenderingContext2D) {
         if (this.fillStyle !== null) {
-            ctx.fillStyle = this.fillStyle.toString()
+            ctx.fillStyle = convertFillOrStrokeStyle(this.fillStyle)
         }
 
         if (this.strokeStyle !== null) {
-            ctx.strokeStyle = this.strokeStyle.toString()
+            ctx.strokeStyle = convertFillOrStrokeStyle(this.strokeStyle)
         }
 
         if (this.lineWidth) {
@@ -207,4 +208,12 @@ export class Style {
             ctx.stroke()
         }
     }
+}
+
+function convertFillOrStrokeStyle (s: FillOrStrokeStyle): string | CanvasGradient | CanvasPattern {
+    if (s instanceof Color) {
+        return s.toCSS()    
+    }
+
+    return s
 }

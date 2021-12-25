@@ -2,6 +2,8 @@ import * as scenic from "@halimath/scenic"
 import { Shape } from "./core"
 import { DefaultDrawingStyle, DefaultZoneStyle, nextTokenStyle } from "./styles"
 
+export const GridSize = 50
+
 export interface DrawingOptions {
     id?: string
     at: scenic.Point | scenic.XY
@@ -79,7 +81,8 @@ export class Zone implements Shape {
                     [10, 25],
                     scenic.Text.create({
                         text: this.label,
-                        style: this.style,                    }),
+                        style: this.style,
+                    }),
                 ],
             ],
         })
@@ -109,7 +112,7 @@ export class Token implements Shape {
 
     createSceneElement(): scenic.SceneElement {
         const outline = new Path2D()
-        outline.rect(0, 0, 50, 50)
+        outline.rect(-10, -10, GridSize + 10, GridSize + 10)
 
         return scenic.SceneElement.create({
             id: this.id,
@@ -118,7 +121,7 @@ export class Token implements Shape {
             movable: true,
 
             paintables: scenic.Path.ellipse({
-                size: 50,
+                size: GridSize - 10,
                 closed: true,
                 style: this.style,
             })

@@ -143,7 +143,7 @@ export class Scene {
     }
 
     findElement(id: string): SceneElement | null {
-        for (var l of this.layers) {
+        for (const l of this.layers) {
             const e = l.findElement(id)
             if (e !== null) {
                 return e

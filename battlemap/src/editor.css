@@ -1,0 +1,72 @@
+:host {
+    --toolbar-border: 2px solid #333;
+    --toolbar-button-color: rgb(2 132 199);
+    --toolbar-button-color-selected: rgb(7 89 133);
+    --toolbar-button-color-disabled: #7c7c7c;
+
+    display: flex;
+    align-items: stretch;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.material-icons {
+    vertical-align: middle;
+}
+
+.toolbar {
+    min-width: 8rem;
+
+    border-right: var(--toolbar-border);
+    padding: 2px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    background-color: #eaeaea;
+}
+
+.toolbar > .divider {
+    min-height: 1rem;
+}
+
+.toolbar > button {
+    min-width: 6rem;
+    margin-bottom: 4px;
+
+    background-color: var(--toolbar-button-color);
+    color: white;
+
+    border: 1px solid var(--toolbar-button-color);
+    border-radius: 4px;
+}
+
+.toolbar > button.selected {
+    background-color: var(--toolbar-button-color-selected);
+}
+
+.toolbar > button:disabled {
+    border-color: var(--toolbar-button-color-disabled);
+    background-color: var(--toolbar-button-color-disabled);
+}
+
+toggle-switch {
+    min-width: 6rem;
+}
+
+toggle-switch a:link,
+toggle-switch a:active,
+toggle-switch a:visited {
+    display: flex;
+    justify-content: space-between;
+
+    color: var(--toolbar-button-color);
+    text-decoration: none;
+}
+
+canvas {
+    flex-grow: 4;
+} 

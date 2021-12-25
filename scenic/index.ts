@@ -2,7 +2,7 @@ export { Point, Dimension, Viewport } from "./src/core"
 export type { XY, ViewportOptions } from "./src/core"
 
 export { Style, Color } from "./src/style"
-export type { FillStyle, StrokeStyle, LineCap, LineJoin, StyleOptions } from "./src/style"
+export type { FillStyle, StrokeStyle, StyleOptions, ColorStyle } from "./src/style"
 
 export { Path, Text, Image } from "./src/paintables"
 export type { PathBaseOptions, PathOptions, RectangleOptions, EllipseOptions, TextOptions, TextAlign, TextDirection, ImageOptions } from "./src/paintables"

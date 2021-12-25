@@ -1,12 +1,38 @@
 {
   "name": "@halimath/scenic",
+  "description": "A TypeScript library for painting on canvas elements",
   "version": "0.1.0",
-  "scripts": {
-    "build": "tsc && vite build"
+  "license": "Apache",
+  "author": {
+    "name": "Alexander Metzner",
+    "email": "alexander.metzner@gmail.com",
+    "url": "https://github.com/halimath"
   },
-  "main": "index.ts",
+  "displayName": "scenic.js",
+  "homepage": "https://github.com/halimath/scenic",
+  "keywords": ["canvas", "2d", "graphics", "scene"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/halimath/scenic.git"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "lint": "eslint . --ext .ts"
+  },
+
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+      "dist"
+  ],
   "devDependencies": {
-    "typescript": "^4.4.4",
-    "vite": "^2.6.13"
+    "typescript": "^4.5.4",
+    "rollup": "^2.61.1",
+    "rollup-plugin-typescript2": "^0.31.1",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "eslint": "^8.5.0",
+    "@typescript-eslint/eslint-plugin": "^5.8.0"
   }
 }

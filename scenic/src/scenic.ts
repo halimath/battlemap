@@ -1,5 +1,5 @@
-import { Color, Style } from "./style"
-import { Point, Viewport } from "./core"
+import { Color, Style, StyleOptions } from "./style"
+import { Point, Viewport, Dimension, XY } from "./core"
 import { Scene } from "./scene"
 import { EventEmitter } from "./eventemitter"
 
@@ -8,30 +8,6 @@ import { EventEmitter } from "./eventemitter"
  * a selector or by providing the element itself.
  */
 export type CanvasSelector = HTMLCanvasElement | string
-
-/**
- * Resolves the selector returning the selected `<canvas>` element
- * or throws an exception.
- * @param s the selector
- * @returns the `HTMLCanvasElement`
- */
-function resolve(s: CanvasSelector): HTMLCanvasElement {
-    if (typeof s !== "string") {
-        return s
-    }
-
-    const e = document.querySelector(s)
-    
-    if (e === null) {
-        throw `No such canvas element: ${s}`
-    }
-    
-    if (!(e instanceof HTMLCanvasElement)) {
-        throw `Not a canvas element: ${e}`
-    }
-
-    return e
-}
 
 /**
  * `DrawingMode` defines how drawing on a canvas should be handled. The system either draws a rect from start, to end,
@@ -53,10 +29,20 @@ export interface ScenicOptions {
     zoom?: boolean
     /** Should the scenic support element selection */
     select?: boolean
+    /** Style definition used to paint selection outlines */
+    selectionStyle?: Style | StyleOptions
     /** Should the scenic support movement - either the whole scene or selected elements */
     move?: boolean
     /** The drawing mode */
     drawingMode?: DrawingMode
+    /** Style definition used to paint intermediate drawings */
+    drawingStyle?: Style | StyleOptions
+    /** Render a grid */
+    grid?: boolean
+    /** Size of the grid */
+    gridSize?: Dimension | XY 
+    /** Style definition used when rendering grid */
+    gridStyle?: Style | StyleOptions
     /** The viewport to use */
     viewport?: Viewport
 }
@@ -109,13 +95,7 @@ export class Scenic {
      * @returns the `Scenic` instance or `null`
      */
     static forCanvas(selector: CanvasSelector): Scenic | null {
-        const canvas = resolve(selector)
-
-        if ((canvas as any)._scenic) {
-            return ((canvas as any)._scenic as Scenic)
-        }
-
-        return null
+        return resolve(selector)._scenic ?? null
     }
 
     /**
@@ -139,42 +119,41 @@ export class Scenic {
             opts.select ?? false,
             opts.move ?? false,
             opts.drawingMode ?? null,
+            Style.create(opts.selectionStyle ?? {
+                strokeStyle: "#0069dba0",
+                lineWidth: 2,
+                shadowColor: "#0083ff",
+                shadowBlur: 5,
+            }),
+            Style.create(opts.drawingStyle ?? {
+                strokeStyle: "#0069dba0",
+                lineWidth: 2,
+                lineDash: [15, 5],
+                shadowColor: "#0083ff",
+                shadowBlur: 5,
+            }),
+            opts.grid ?? false,
+            opts.gridSize ?? 10,
+            Style.create(opts.gridStyle ?? {
+                strokeStyle: Color.fromRGBBytes(150, 150, 150),
+                lineWidth: 1,
+            }),
             opts.viewport,
         )
 
-        if ((canvas as any)._scenic) {
-            ((canvas as any)._scenic as Scenic).disconnect()
+        if (canvas._scenic) {
+            (canvas._scenic as Scenic).disconnect()
         }
-        (canvas as any)._scenic = s
+        canvas._scenic = s
         s.connect()
+
+        s.repaint()
 
         return s
     }
 
-    /**
-     * `selectionStyle` is used to render a selection frame. It may be updated to customize selection style.
-     */
-    public selectionStyle: Style = Style.create({
-        strokeStyle: "#0069dba0",
-        lineWidth: 2,
-        shadowColor: "#0083ff",
-        shadowBlur: 5,
-    })
-
-    /**
-     * `drawingStyle` is used to render the intermediate drawing. It may be updated to customize drawing 
-     * style.
-     */
-    public drawingStyle: Style = Style.create({
-        strokeStyle: "#0069dba0",
-        lineWidth: 2,
-        lineDash: [15, 5],
-        shadowColor: "#0083ff",
-        shadowBlur: 5,
-    })
-
     private _viewport: Viewport
-    
+
     /** The viewport capturing repositioning and zooming */
     get viewport(): Viewport {
         return this._viewport
@@ -185,8 +164,6 @@ export class Scenic {
         this._viewport = viewport
         this.repaint()
     }
-
-    private _scene: Scene
 
     /** Returns the current `Scene`. */
     get scene(): Scene {
@@ -214,27 +191,56 @@ export class Scenic {
         this.repaint()
     }
 
+    get grid(): boolean {
+        return this._grid
+    }
+
+    set grid(g: boolean) {
+        this._grid = g
+        this.repaint()
+    }
+
+    private _gridSize: Dimension
+
+    get gridSize(): Dimension {
+        return this._gridSize
+    }
+
+    set gridSize(s: Dimension | XY) {
+        this._gridSize = Dimension.create(s)
+        this.repaint()
+    }
+
+    get gridStyle(): Style {
+        return this._gridStyle
+    }
+
+    set gridStyle(s: Style) {
+        this._gridStyle = s
+        this.repaint()
+    }
+
     private constructor(
         public readonly canvas: HTMLCanvasElement,
-        scene: Scene,
+        private _scene: Scene,
         public resize: boolean,
         public zoom: boolean,
         public select: boolean,
         public move: boolean,
         public drawingMode: DrawingMode,
-        viewport?: Viewport
+        public selectionStyle: Style,
+        public drawingStyle: Style,
+        private _grid: boolean,
+        gridSize: Dimension | XY,
+        private _gridStyle: Style,
+        viewport?: Viewport,
     ) {
         this._viewport = viewport ?? Viewport.initial()
-        this._scene = scene
-
-        this.canvas.width = canvas.scrollWidth
-        this.canvas.height = canvas.scrollHeight
-
-        this.repaint()
+        this._gridSize = Dimension.create(gridSize)
     }
 
     /** Used internally to manage subscribed event listeners */
-    private readonly eventEmitter = new EventEmitter()
+    private readonly eventEmitter = new EventEmitter<ScenicEvent>()
 
     /** `on` subscribes for a drawing finished event */
     on(eventName: "drawingFinished", listener: EventListener<DrawingFinishedEvent>): Scenic
@@ -246,7 +252,7 @@ export class Scenic {
     on(eventName: "sceneUpdated", listener: EventListener<ScenicEvent>): Scenic
 
     on<T extends ScenicEvent>(eventName: EventName, listener: EventListener<T>): Scenic {
-        this.eventEmitter.on(eventName, listener)
+        this.eventEmitter.on(eventName, listener as EventListener<ScenicEvent>)
         return this
     }
 
@@ -262,6 +268,9 @@ export class Scenic {
      */
     repaint(): void {
         requestAnimationFrame(() => {
+            this.canvas.width = this.canvas.scrollWidth
+            this.canvas.height = this.canvas.scrollHeight
+
             const ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D
 
             ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
@@ -269,9 +278,42 @@ export class Scenic {
             this._backgroundStyle.prepare(ctx)
             ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
+            if (this.grid) {
+                try {
+                    ctx.save()                    
+                    this._gridStyle.prepare(ctx)
+
+                    let x = (this._viewport.origin.x % (this._gridSize.x * this._viewport.scale))
+                    while (x < this.canvas.width) {
+                        if (x > 0) {
+                            ctx.moveTo(x, 0)
+                            ctx.lineTo(x, this.canvas.height)
+                            ctx.stroke()
+                        }
+                        x += this._gridSize.x * this._viewport.scale
+                    }
+
+                    let y = (this._viewport.origin.y % (this._gridSize.y * this._viewport.scale))
+                    while (y < this.canvas.width) {
+                        if (y > 0) {
+                            ctx.moveTo(0, y)
+                            ctx.lineTo(this.canvas.width, y)
+                            ctx.stroke()
+                        }
+                        y += this._gridSize.y * this._viewport.scale
+                    }
+
+                } finally {
+                    ctx.restore()
+                }
+            }
+
+
+
             try {
                 ctx.save()
                 this.viewport.applyTranspose(ctx)
+
                 this.scene.repaint(ctx, this.selectionStyle)
             } finally {
                 ctx.restore()
@@ -311,8 +353,8 @@ export class Scenic {
         this.canvas.addEventListener("mousedown", this.onMouseDown)
         this.canvas.addEventListener("touchstart", this.onTouchStart)
 
-        this.canvas.getRootNode()?.addEventListener("mouseup", this.onMouseUp)
-        this.canvas.getRootNode()?.addEventListener("touchend", this.onTouchEnd)
+        this.canvas.addEventListener("mouseup", this.onMouseUp)
+        this.canvas.addEventListener("touchend", this.onTouchEnd)
 
         this.canvas.addEventListener("mousemove", this.onMouseMove)
         this.canvas.addEventListener("touchmove", this.onTouchMove)
@@ -329,8 +371,8 @@ export class Scenic {
         this.canvas.removeEventListener("mousedown", this.onMouseDown)
         this.canvas.removeEventListener("touchstart", this.onTouchStart)
 
-        this.canvas.getRootNode()?.removeEventListener("mouseup", this.onMouseUp)
-        this.canvas.getRootNode()?.removeEventListener("touchend", this.onTouchEnd)
+        this.canvas.removeEventListener("mouseup", this.onMouseUp)
+        this.canvas.removeEventListener("touchend", this.onTouchEnd)
 
         this.canvas.removeEventListener("mousemove", this.onMouseMove)
         this.canvas.removeEventListener("touchmove", this.onTouchMove)
@@ -344,9 +386,6 @@ export class Scenic {
         if (!this.resize) {
             return
         }
-
-        this.canvas.width = this.canvas.scrollWidth
-        this.canvas.height = this.canvas.scrollHeight
 
         this.repaint()
     }
@@ -423,7 +462,7 @@ export class Scenic {
     }
 
     private onTouchMove = (evt: TouchEvent) => {
-        console.log("touchmove", evt.touches.length)        
+        console.log("touchmove", evt.touches.length)
         if (!this.interactLastCheckpoint) {
             return
         }
@@ -434,7 +473,7 @@ export class Scenic {
 
         this.onInteractMove(Point.fromTouchEvent(evt))
     }
-    
+
     private onInteractMove = (p: Point) => {
         const drag = this.interactLastCheckpoint!.diff(p)
         this.interactLastCheckpoint = p
@@ -450,7 +489,7 @@ export class Scenic {
 
         const selectedElements = this.scene.selected
         if (selectedElements.length > 0) {
-            selectedElements.forEach(e => e.at = e.at.move(drag.diff(this.viewport.scale)))            
+            selectedElements.forEach(e => e.at = e.at.move(drag.diff(this.viewport.scale)))
             this.repaint()
             return
         }
@@ -486,7 +525,7 @@ export class Scenic {
         this.repaint()
     }
 
-    private handleDraw(p: Point) {        
+    private handleDraw(p: Point) {
         this.updateDrawingPath(p)
         this.repaint()
     }
@@ -513,14 +552,14 @@ export class Scenic {
             this.drawingPath.rect(this.interactOrigin!.x, this.interactOrigin!.y, size.x, size.y)
 
             if (this.drawnPoints === null) {
-                this.drawnPoints = [ this.viewport.toCoordinateSpace(currentPoint) ]
+                this.drawnPoints = [this.viewport.toCoordinateSpace(currentPoint)]
             }
         } else if (this.drawingMode === "poly") {
             if (this.drawingPath === null) {
                 this.drawingPath = new Path2D()
                 this.drawingPath.moveTo(this.interactOrigin!.x, this.interactOrigin!.y)
 
-                this.drawnPoints = [ this.viewport.toCoordinateSpace(currentPoint)]
+                this.drawnPoints = [this.viewport.toCoordinateSpace(currentPoint)]
             } else {
                 this.drawnPoints!.push(this.viewport.toCoordinateSpace(currentPoint))
             }
@@ -552,4 +591,32 @@ export class Scenic {
             source: this,
         })
     }
+}
+
+interface ScenicHTMLCanvasElement extends HTMLCanvasElement {
+    _scenic?: Scenic
+}
+
+/**
+ * Resolves the selector returning the selected `<canvas>` element
+ * or throws an exception.
+ * @param s the selector
+ * @returns the `HTMLCanvasElement`
+ */
+function resolve(s: CanvasSelector): ScenicHTMLCanvasElement {
+    if (typeof s !== "string") {
+        return s
+    }
+
+    const e = document.querySelector(s)
+
+    if (e === null) {
+        throw new Error(`No such canvas element: ${s}`)
+    }
+
+    if (!(e instanceof HTMLCanvasElement)) {
+        throw new Error(`Not a canvas element: ${e}`)
+    }
+
+    return e
 }

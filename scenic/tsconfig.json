@@ -16,11 +16,17 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "paths": {
-      "@halimath/scenic": ["./scenic"],
-    }
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "outDir": "./dist"    
   },
   "include": [
-    "./src"
+    "./src",
+    "index.ts"
   ]
 }

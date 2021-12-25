@@ -1,16 +1,47 @@
 {
   "name": "@halimath/battlemap",
   "version": "0.1.0",
-  "scripts": {
-    "build": "tsc && vite build"
+  "description": "A TypeScript library for rendering virtual table-top battle maps",
+  "license": "Apache",
+  "author": {
+    "name": "Alexander Metzner",
+    "email": "alexander.metzner@gmail.com",
+    "url": "https://github.com/halimath"
   },
-  "main": "index.ts",
+  "displayName": "battlemap.js",
+  "homepage": "https://github.com/halimath/battlemap",
+  "keywords": [
+    "vtt",
+    "battlemap",
+    "rpg"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/halimath/battlemap.git"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "lint": "eslint . --ext .ts"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
-    "@weccoframework/core": "^0.21.2",
-    "@halimath/scenic": "../scenic"
-  },  
+    "@weccoframework/core": "^0.21.3",
+    "@halimath/scenic": "^0.1.0"
+  },
   "devDependencies": {
-    "typescript": "^4.4.4",
-    "vite": "^2.6.13"
+    "typescript": "^4.5.4",
+    "rollup": "^2.61.1",
+    "rollup-plugin-typescript2": "^0.31.1",
+    "@rollup/plugin-commonjs": "^21.0.1",
+    "@rollup/plugin-node-resolve": "^13.1.1",
+    "rollup-plugin-import-css": "^3.0.2",
+    "eslint": "^8.5.0",
+    "@typescript-eslint/eslint-plugin": "^5.8.0"
   }
 }

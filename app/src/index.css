@@ -6,6 +6,10 @@
     vertical-align: middle;
 }
 
+button {
+    @apply p-2 mx-4 inline-block
+}
+
 button.selected {
     @apply border-2 border-white rounded-md
 }

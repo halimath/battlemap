@@ -59,7 +59,7 @@ export class Point {
 
     static fromTouchEvent(evt: TouchEvent) {
         if (evt.touches.length === 0) {
-            throw "empty touches"
+            throw new Error("empty touches")
         }
         
         const bcr = (evt.target as HTMLElement).getBoundingClientRect()
