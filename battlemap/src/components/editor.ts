@@ -1,10 +1,10 @@
 
 import * as scenic from "@halimath/scenic"
 import * as wecco from "@weccoframework/core"
-import { BattleMap, createScene, updatePositions } from "./core"
+import { BattleMap, createScene, updatePositions } from "../core"
 import styles from "./editor.css"
-import { Drawing, Token, Zone, GridSize } from "./shapes"
-import { DefaultDrawingStyle, DefaultZoneStyle } from "./styles"
+import { Drawing, Token, Zone, GridSize } from "../shapes"
+import { DefaultDrawingStyle, DefaultZoneStyle } from "../styles"
 
 import { ToggleSwitch } from "./toggle"
 
