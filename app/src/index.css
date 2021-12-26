@@ -7,14 +7,23 @@
 }
 
 button {
-    @apply p-2 mx-4 inline-block
+    @apply px-2 mx-2 inline-block;
 }
 
-button.selected {
-    @apply border-2 border-white rounded-md
+.notification {
+    @apply z-40 absolute top-1 right-1 flex w-full max-w-sm mx-auto overflow-hidden bg-white rounded-lg shadow-md dark:bg-gray-800 my-5 border-l-8 transition-opacity duration-200 opacity-0;
+}
+
+.notification.info {
+    @apply border-sky-600 text-sky-700;
+}
+
+.notification.error {
+    @apply border-red-600 text-red-700;
 }
 
 battlemap-editor,
 battlemap-viewer {
-    @apply grow-[4]
+    @apply grow-[4];
+    touch-action: none;
 }

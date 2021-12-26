@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES6",
     "useDefineForClassFields": true,
-    "module": "ESNext",
+    "module": "CommonJS",
     "lib": [
-      "ESNext",
-      "DOM"
+      "ES6"
     ],
     "moduleResolution": "Node",
     "strict": true,
@@ -18,6 +17,7 @@
     "noImplicitReturns": true
   },
   "include": [
-    "./src"
+    "./src",
+    "./main.ts"
   ]
 }

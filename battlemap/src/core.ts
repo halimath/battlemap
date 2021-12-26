@@ -46,3 +46,4 @@ export function createScene(data: BattleMap): scenic.Scene {
         ),
     )
 }
+

@@ -350,14 +350,9 @@ export class Scenic {
 
         this.canvas.addEventListener("wheel", this.onZoom)
 
-        this.canvas.addEventListener("mousedown", this.onMouseDown)
-        this.canvas.addEventListener("touchstart", this.onTouchStart)
-
-        this.canvas.addEventListener("mouseup", this.onMouseUp)
-        this.canvas.addEventListener("touchend", this.onTouchEnd)
-
-        this.canvas.addEventListener("mousemove", this.onMouseMove)
-        this.canvas.addEventListener("touchmove", this.onTouchMove)
+        this.canvas.addEventListener("pointerdown", this.onPointerDown)
+        this.canvas.addEventListener("pointerup", this.onPointerUp)
+        this.canvas.addEventListener("pointermove", this.onPointerMove)
     }
 
     /**
@@ -368,14 +363,9 @@ export class Scenic {
 
         this.canvas.removeEventListener("wheel", this.onZoom)
 
-        this.canvas.removeEventListener("mousedown", this.onMouseDown)
-        this.canvas.removeEventListener("touchstart", this.onTouchStart)
-
-        this.canvas.removeEventListener("mouseup", this.onMouseUp)
-        this.canvas.removeEventListener("touchend", this.onTouchEnd)
-
-        this.canvas.removeEventListener("mousemove", this.onMouseMove)
-        this.canvas.removeEventListener("touchmove", this.onTouchMove)
+        this.canvas.removeEventListener("pointerdown", this.onPointerDown)
+        this.canvas.removeEventListener("pointerup", this.onPointerUp)
+        this.canvas.removeEventListener("pointermove", this.onPointerMove)
     }
 
     /**
@@ -393,20 +383,13 @@ export class Scenic {
     private interactOrigin: Point | null = null
     private interactLastCheckpoint: Point | null = null
 
-    private onMouseDown = (evt: MouseEvent) => {
+    private onPointerDown = (evt: PointerEvent) => {
         evt.preventDefault()
         evt.stopPropagation()
         evt.stopImmediatePropagation()
+        this.canvas.setPointerCapture(evt.pointerId)
 
         this.onInteractStart(Point.fromMouseEvent(evt))
-    }
-
-    private onTouchStart = (evt: TouchEvent) => {
-        evt.preventDefault()
-        evt.stopPropagation()
-        evt.stopImmediatePropagation()
-
-        this.onInteractStart(Point.fromTouchEvent(evt))
     }
 
     private onInteractStart(p: Point) {
@@ -414,13 +397,12 @@ export class Scenic {
         this.interactLastCheckpoint = this.interactOrigin
     }
 
-    private onMouseUp = (e: Event) => {
-        this.onInteractEnd(Point.fromMouseEvent(e as MouseEvent), !(e as MouseEvent).ctrlKey)
-    }
+    private onPointerUp = (e: PointerEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
 
-    private onTouchEnd = () => {
-        // Touchend contains an empty list of touch events, so we reuse the last submitted point here.
-        this.onInteractEnd(this.interactLastCheckpoint!, false)
+        this.onInteractEnd(Point.fromMouseEvent(e), e.ctrlKey)
     }
 
     private onInteractEnd = (p: Point, ctrlKey: boolean) => {
@@ -449,7 +431,7 @@ export class Scenic {
         }
     }
 
-    private onMouseMove = (evt: MouseEvent) => {
+    private onPointerMove = (evt: PointerEvent) => {
         if (!this.interactLastCheckpoint) {
             return
         }
@@ -457,21 +439,10 @@ export class Scenic {
         evt.preventDefault()
         evt.stopPropagation()
         evt.stopImmediatePropagation()
+
+        this.canvas.setPointerCapture(evt.pointerId)
 
         this.onInteractMove(Point.fromMouseEvent(evt))
-    }
-
-    private onTouchMove = (evt: TouchEvent) => {
-        console.log("touchmove", evt.touches.length)
-        if (!this.interactLastCheckpoint) {
-            return
-        }
-
-        evt.preventDefault()
-        evt.stopPropagation()
-        evt.stopImmediatePropagation()
-
-        this.onInteractMove(Point.fromTouchEvent(evt))
     }
 
     private onInteractMove = (p: Point) => {

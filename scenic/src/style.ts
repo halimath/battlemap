@@ -70,9 +70,21 @@ export class Color {
         return `rgba(${this.red * 255}, ${this.green * 255}, ${this.blue * 255}, ${this.alpha})`
     }
 
+    toHex(): string {
+        return `#${toHexComponent(this.red)}${toHexComponent(this.green)}${toHexComponent(this.blue)}`
+    }
+
     toString(): string {
         return this.toCSS()
     }
+}
+
+function toHexComponent(c: number): string {
+    const r = (c * 255).toString(16)
+    if (r.length < 2) {
+        return "0" + r
+    }
+    return r
 }
 
 export type ColorStyle = string | Color

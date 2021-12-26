@@ -20,15 +20,17 @@ export const DefaultZoneStyle: scenic.StyleOptions = {
     fontSize: 20,
 }
 
-export const TokenColors = [
-    scenic.Color.parseHex("#b91c1c"),
-    scenic.Color.parseHex("#a16207"),
-    scenic.Color.parseHex("#4d7c0f"),
-    scenic.Color.parseHex("#0e7490"),
-    scenic.Color.parseHex("#1d4ed8"),
-    scenic.Color.parseHex("#7e22ce"),
-    scenic.Color.parseHex("#be123c"),
-]
+export const DefaultTokenColor = scenic.Color.parseHex("#b91c1c")
+
+// export const TokenColors = [
+//     scenic.Color.parseHex("#b91c1c"),
+//     scenic.Color.parseHex("#a16207"),
+//     scenic.Color.parseHex("#4d7c0f"),
+//     scenic.Color.parseHex("#0e7490"),
+//     scenic.Color.parseHex("#1d4ed8"),
+//     scenic.Color.parseHex("#7e22ce"),
+//     scenic.Color.parseHex("#be123c"),
+// ]
 
 export const TokenStyleOptions: scenic.StyleOptions = {
     lineWidth: 5,
@@ -38,19 +40,20 @@ export const TokenStyleOptions: scenic.StyleOptions = {
     shadowOffsetY: 5,    
 }
 
-export function tokenStyle (c: scenic.Color): scenic.StyleOptions {
+export function tokenStyle (c: scenic.Color | string): scenic.StyleOptions {
+    let color: scenic.Color
+    if (typeof c === "string") {
+        color = scenic.Color.parseHex(c)
+    } else {
+        color = c
+    }
+
     return merge({
-        strokeStyle: c,
-        fillStyle: c.lighten(0.5).withAlpha(0.5),    
+        strokeStyle: color,
+        fillStyle: color.lighten(0.5).withAlpha(0.5),    
     }, TokenStyleOptions)
 }
 
 function merge<A extends object, B extends object>(a: A, b: B): A & B {
     return Object.assign({}, a, b)
-}
-
-let lastTokenColorIndex = 0
-
-export function nextTokenStyle(): scenic.StyleOptions {
-    return tokenStyle(TokenColors[lastTokenColorIndex++ % TokenColors.length])
 }

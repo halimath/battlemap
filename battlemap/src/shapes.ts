@@ -1,6 +1,6 @@
 import * as scenic from "@halimath/scenic"
 import { Shape } from "./core"
-import { DefaultDrawingStyle, DefaultZoneStyle, nextTokenStyle } from "./styles"
+import { DefaultDrawingStyle, DefaultZoneStyle, DefaultTokenColor, tokenStyle } from "./styles"
 
 export const GridSize = 50
 
@@ -92,15 +92,26 @@ export class Zone implements Shape {
 export interface TokenOptions {
     id?: string,
     at: scenic.Point | scenic.XY
+    color?: scenic.Color | string
     style?: scenic.StyleOptions
 }
 
-export class Token implements Shape {
+export class Token implements Shape {    
     static create(opts: TokenOptions): Token {
+        let color = DefaultTokenColor
+        if (opts.color) {
+            if (typeof opts.color === "string") {
+                color = scenic.Color.parseHex(opts.color)
+            } else {
+                color = opts.color
+            }
+        }
+        
         return new Token(
             opts.id ?? scenic.randomId(),
             scenic.Point.create(opts.at),
-            opts.style ?? nextTokenStyle(),
+            opts.style ?? tokenStyle(color),
+            color,
         )
     }
 
@@ -108,6 +119,7 @@ export class Token implements Shape {
         public readonly id: string,
         public at: scenic.Point,
         public style: scenic.StyleOptions,
+        public color: scenic.Color,
     ) { }
 
     createSceneElement(): scenic.SceneElement {

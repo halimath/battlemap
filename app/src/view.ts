@@ -1,7 +1,8 @@
 import * as battlemap from "@halimath/battlemap"
 import * as wecco from "@weccoframework/core"
-import { Message, ChangeView, Reset, BattleMapUpdated } from "./control"
+import { Message, BattleMapUpdated } from "./control"
 import { Model } from "./model"
+import { showNotification } from "./notification"
 
 export function root(model: Model, ctx: wecco.AppContext<Message>): wecco.ElementUpdate {
     if (model.view === "viewer") {
@@ -22,16 +23,29 @@ export function root(model: Model, ctx: wecco.AppContext<Message>): wecco.Elemen
     ]
 }
 
+function copyShareLink(model: Model, evt: Event) {
+    evt.preventDefault()
+    evt.stopPropagation()
+    evt.stopImmediatePropagation()
+    
+    navigator.clipboard.writeText(model.shareUrl)
+    showNotification("Url to join the map has been copied to your clipboard.")
+}
+
 function appbar(model: Model, ctx: wecco.AppContext<Message>): wecco.ElementUpdate {
+    const actions = model.view === "editor" ? wecco.html`        
+        <button @click=${copyShareLink.bind(null, model)}><i class="material-icons">share</i></button>
+    ` : ""
+
     return wecco.html`
         <div class="bg-sky-600 text-white p-4 mb-1 shadow-md font-sans flex justify-between">
             <div class="grow-[1]">
                 <span class="text-lg font-bold">Battle Map</span>
+                <a href="${model.shareUrl}">${model.id}</span>
+
             </div>
-            <div class="grow-[4]">
-                <button @click=${() => ctx.emit(new Reset())}><i class="material-icons">delete</i></button>
-                <button class=${model.view === "editor" ? "selected" : ""} @click=${() => ctx.emit(new ChangeView("editor"))}><i class="material-icons">edit</i></button>
-                <button class=${model.view === "viewer" ? "selected" : ""} @click=${() => ctx.emit(new ChangeView("viewer"))}><i class="material-icons">preview</i></button>
+            <div class="flex align-end">
+                ${actions}
             </div>
         </div>`
 }

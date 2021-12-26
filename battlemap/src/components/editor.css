@@ -29,11 +29,11 @@
     background-color: #eaeaea;
 }
 
-.toolbar > .divider {
+.toolbar  .divider {
     min-height: 1rem;
 }
 
-.toolbar > button {
+.toolbar  button {
     min-width: 6rem;
     margin-bottom: 4px;
 
@@ -44,27 +44,28 @@
     border-radius: 4px;
 }
 
-.toolbar > button.selected {
+.toolbar input[type="color"] {
+    border: 1px solid var(--toolbar-button-color);
+    border-radius: 4px;
+    min-width: 6rem;
+    margin-bottom: 4px;    
+}
+
+.toolbar .checkbox {
+    min-width: 6rem;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--toolbar-button-color);
+}
+
+.toolbar  button.selected {
     background-color: var(--toolbar-button-color-selected);
 }
 
-.toolbar > button:disabled {
+.toolbar  button:disabled {
     border-color: var(--toolbar-button-color-disabled);
     background-color: var(--toolbar-button-color-disabled);
-}
-
-toggle-switch {
-    min-width: 6rem;
-}
-
-toggle-switch a:link,
-toggle-switch a:active,
-toggle-switch a:visited {
-    display: flex;
-    justify-content: space-between;
-
-    color: var(--toolbar-button-color);
-    text-decoration: none;
 }
 
 canvas {

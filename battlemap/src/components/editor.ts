@@ -1,12 +1,12 @@
 
 import * as scenic from "@halimath/scenic"
 import * as wecco from "@weccoframework/core"
-import { BattleMap, createScene, updatePositions } from "../core"
-import styles from "./editor.css"
-import { Drawing, Token, Zone, GridSize } from "../shapes"
-import { DefaultDrawingStyle, DefaultZoneStyle } from "../styles"
 
-import { ToggleSwitch } from "./toggle"
+import { BattleMap, createScene, updatePositions } from "../core"
+import { Drawing, Token, Zone, GridSize } from "../shapes"
+import { DefaultDrawingStyle, DefaultZoneStyle, DefaultTokenColor } from "../styles"
+
+import styles from "./editor.css"
 
 export type Action = "move" | "draw" | "zone" | "token" | "remove"
 
@@ -14,6 +14,7 @@ export interface EditorData extends BattleMap {
     viewport?: scenic.Viewport
     action?: Action
     grid?: boolean
+    tokenColor?: string
 }
 
 export const UpdatedEvent = "battlemapUpdated"
@@ -103,33 +104,45 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
 function addToken(data: EditorData, ctx: wecco.RenderContext) {
     data.tokens?.push(Token.create({
         at: [10, 10],
+        color: data.tokenColor ?? DefaultTokenColor
     }))
+    data.action = "move"
 
+    ctx.emit(UpdatedEvent, data)
     ctx.requestUpdate()
 }
 
 function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate {
     return wecco.html`
         <div class="toolbar">
+            
             <button @click=${() => { data.action = "move"; ctx.requestUpdate() }} class=${data.action === "move" ? "selected" : ""}><i class="material-icons">pan_tool</i></button>
             <div class="divider"></div>
             <button @click=${() => { data.action = "draw"; ctx.requestUpdate() }} class=${data.action === "draw" ? "selected" : ""}><i class="material-icons">edit</i></button>
             <div class="divider"></div>
             <button @click=${() => { data.action = "zone"; ctx.requestUpdate() }} class=${data.action === "zone" ? "selected" : ""}><i class="material-icons">crop_free</i></button>
             <div class="divider"></div>
+            <input type="color" value=${data.tokenColor ?? DefaultTokenColor.toHex()} @change=${(e: InputEvent) => {
+                data.tokenColor = (e.target as HTMLInputElement).value
+            }}>
             <button @click=${addToken.bind(null, data, ctx)} class=${data.action === "token" ? "selected" : ""}><i class="material-icons">add_circle</i></button>
             <button @click=${() => { data.action = "remove"; ctx.requestUpdate() }} disabled class=${data.action === "remove" ? "selected" : ""}><i class="material-icons">remove_circle</i></button>
             <div class="divider"></div>
-            ${ToggleSwitch({
-                label: "Grid",
-                state: data.grid,
-                onChange: s => {
-                    console.log("Toggle grid")
-                    data.grid = s
-                    ctx.requestUpdate()
-                }
-            })}
+            <div class="checkbox">
+                <input type="checkbox" ?checked=${data.grid ?? false} @change=${(e: InputEvent) => {
+                data.grid = (e.target as HTMLInputElement).checked
+                ctx.requestUpdate()
+            }}>
+                Grid
+            </div>
+            <div class="divider"></div>
+            <button @click=${() => {
+                data.background = []
+                data.explanations = []
+                data.tokens = []
+                data.viewport = undefined                
+                ctx.requestUpdate()
+        }}><i class="material-icons">delete</i></button>
         </div>
     `
 }
-

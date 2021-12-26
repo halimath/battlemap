@@ -1,17 +1,7 @@
 import * as wecco from "@weccoframework/core"
 import * as battlemap from "@halimath/battlemap"
-
-import { Model, View } from "./model"
-
-export class ChangeView {
-    readonly command = "change-view"
-
-    constructor (readonly view: View) {}
-}
-
-export class Reset {
-    readonly command = "reset"
-}
+import { showNotification } from "./notification"
+import { Model } from "./model"
 
 export class BattleMapUpdated {
     readonly command = "battleMap-updated"
@@ -19,17 +9,40 @@ export class BattleMapUpdated {
     constructor (readonly battleMap: battlemap.BattleMap) {}
 }
 
-export type Message = ChangeView | Reset | BattleMapUpdated
+export class Join {
+    readonly command = "join"
 
-export function update(model: Model, msg: Message): Model | typeof wecco.NoModelChange {
+    constructor (readonly id: string) {}
+}
+
+export type Message =  BattleMapUpdated | Join
+
+export function update(model: Model, msg: Message, ctx: wecco.AppContext<Message>): Model | typeof wecco.NoModelChange {
     switch (msg.command) {
-        case "reset":
-            return new Model({}, "editor")
-        case "change-view":
-            return new Model(model.battleMap, msg.view)
         case "battleMap-updated":
-            return new Model(msg.battleMap, model.view)
+            return notify(new Model(model.view, model.id, msg.battleMap, model.ws))
+        case "join":
+            return join(msg.id, ctx)
     }
-    
-    return wecco.NoModelChange
+}
+
+function join(id: string, ctx: wecco.AppContext<Message>): Model {
+    const m = Model.connect(id, "viewer")
+    m.ws.addEventListener("message", msg => {
+        try {
+            ctx.emit(new BattleMapUpdated(battlemap.unmarshalBattleMap(msg.data)))
+        } catch (e) {
+            console.error(e)
+        }
+    })
+    m.ws.addEventListener("close", () => {
+        showNotification("The editor closed the map.")
+    })
+
+    return m
+}
+
+function notify(m: Model): Model {
+    m.ws.send(battlemap.marshalBattleMap(m.battleMap))
+    return m
 }
