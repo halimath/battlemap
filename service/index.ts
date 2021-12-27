@@ -13,3 +13,9 @@ httpServer.on("upgrade", (request, socket, head) => {
         wsServer.emit("connection", socket, request)
     })
 })
+
+process.on("SIGINT", () => {
+    l.info("Shutting down")
+    httpServer.close()
+    process.exit(0)
+})

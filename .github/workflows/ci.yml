@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: npm
+      
+      - name: Install dependencies for @halimath/scenic
+        working-directory: ./scenic
+        run: npm i
+        
+      - name: Build @halimath/scenic
+        working-directory: ./scenic
+        run: npm run build
+
+      - name: Install dependencies for @halimath/battlemap
+        working-directory: ./battlemap
+        run: npm i
+
+      - name: Build @halimath/battlemap
+        working-directory: ./battlemap
+        run: npm run build
+
+      - name: Install dependencies for app
+        working-directory: ./app
+        run: npm i
+
+      - name: Build app
+        working-directory: ./app
+        run: npm run build
+
+      - name: Install dependencies for service
+        working-directory: ./service
+        run: npm i
+
+      - name: Build service
+        working-directory: ./service
+        run: npm run build

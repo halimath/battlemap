@@ -1,18 +1,13 @@
 import typescript from "rollup-plugin-typescript2"
-import commonjs from "@rollup/plugin-commonjs"
+import commonjs from "rollup-plugin-commonjs"
+import run from "@rollup/plugin-run"
 
-import { name } from "./package.json"
+const dev = process.env.ROLLUP_WATCH === "true"
 
 export default {
     input: "./index.ts",
 
     output: [
-        {
-            file: `dist/index.esm.js`,
-            name: name,
-            format: "esm",
-            sourcemap: true
-        },
         {
             file: `dist/index.js`,
             format: "cjs",
@@ -23,5 +18,6 @@ export default {
     plugins: [
         typescript(),
         commonjs(),
+        dev && run(),
     ]
 }

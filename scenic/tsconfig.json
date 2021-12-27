@@ -23,7 +23,7 @@
     "alwaysStrict": true,
     "skipLibCheck": true,
     "declaration": true,
-    "outDir": "./dist"    
+    "outDir": "./dist"
   },
   "include": [
     "./src",

@@ -27,7 +27,7 @@ export function update(model: Model, msg: Message, ctx: wecco.AppContext<Message
 }
 
 function join(id: string, ctx: wecco.AppContext<Message>): Model {
-    const m = Model.connect(id, "viewer")
+    const m = Model.join(id)
     m.ws.addEventListener("message", msg => {
         try {
             ctx.emit(new BattleMapUpdated(battlemap.unmarshalBattleMap(msg.data)))

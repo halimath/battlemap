@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "useDefineForClassFields": true,
-    "module": "CommonJS",
+    "module": "ESNext",
     "lib": [
       "ES6"
     ],
@@ -14,10 +14,11 @@
     "noEmit": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitReturns": true
+    "noImplicitReturns": true,
+    "outDir": "dist"
   },
   "include": [
     "./src",
-    "./main.ts"
+    "index.ts"
   ]
 }

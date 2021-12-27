@@ -3,12 +3,13 @@ import * as battlemap from "@halimath/battlemap"
 export type View = "editor" | "viewer"
 
 export class Model {
-    static initial(): Model {
-        return Model.connect(randomId())
+    static editor(): Model {
+        const id = randomId()
+        return new Model("editor", id, {}, new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/edit/${id}`))
     }
 
-    static connect(id: string, view: View = "editor"): Model {
-        return new Model(view, id, {}, new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/map/${id}`))
+    static join(id: string): Model {
+        return new Model("viewer", id, {}, new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/view/${id}`))
     }
 
     constructor(
@@ -19,7 +20,7 @@ export class Model {
     ) { }
 
     get shareUrl(): string {
-        return `${document.location.protocol}//${document.location.host}/${this.id}`
+        return `${document.location.protocol}//${document.location.host}/join/${this.id}`
     }
 }
 

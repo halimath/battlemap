@@ -6,9 +6,9 @@ import { root } from "./view"
 import "./index.css"
 
 document.addEventListener("DOMContentLoaded", () => {
-    const ctx = wecco.app(Model.initial, update, root, "#app")
+    const ctx = wecco.app(Model.editor, update, root, "#app")
 
-    if (document.location.pathname.length > 1) {
-        ctx.emit(new Join(document.location.pathname.substring(1)))
+    if (document.location.pathname.startsWith("/join/")) {
+        ctx.emit(new Join(document.location.pathname.substring("/join/".length)))
     }
 })

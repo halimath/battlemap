@@ -32,7 +32,7 @@
   ],
   "dependencies": {
     "@weccoframework/core": "^0.21.3",
-    "@halimath/scenic": "^0.1.0"
+    "@halimath/scenic": "file:../scenic"
   },
   "devDependencies": {
     "typescript": "^4.5.4",

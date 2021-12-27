@@ -7,7 +7,7 @@ import { showNotification } from "./notification"
 export function root(model: Model, ctx: wecco.AppContext<Message>): wecco.ElementUpdate {
     if (model.view === "viewer") {
         return [
-            appbar(model, ctx),
+            appbar(model),
             battlemap.Viewer(model.battleMap),
         ]
     }
@@ -18,7 +18,7 @@ export function root(model: Model, ctx: wecco.AppContext<Message>): wecco.Elemen
     })
 
     return [
-        appbar(model, ctx),
+        appbar(model),
         editor,
     ]
 }
@@ -32,7 +32,7 @@ function copyShareLink(model: Model, evt: Event) {
     showNotification("Url to join the map has been copied to your clipboard.")
 }
 
-function appbar(model: Model, ctx: wecco.AppContext<Message>): wecco.ElementUpdate {
+function appbar(model: Model): wecco.ElementUpdate {
     const actions = model.view === "editor" ? wecco.html`        
         <button @click=${copyShareLink.bind(null, model)}><i class="material-icons">share</i></button>
     ` : ""
