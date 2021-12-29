@@ -26,7 +26,6 @@ app.use((req, res, next) => {
 
 app.use((req, _, next) => {
     if (req.url.startsWith("/view/") || req.url.startsWith("/edit/")) {
-        console.log(req.url)
         req.url = "/index.html"
     }
 

@@ -54,8 +54,7 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
             }).on("sceneUpdated", evt => {
                 updatePositions(data, evt.source.scene)
                 ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
-                // No need to trigger a repaint here. Simply update our element's model to reflect the
-                // changes made by scenic.
+                ctx.requestUpdate()
             }).on("viewportChanged", evt => {
                 data.viewport = evt.source.viewport
                 ctx.emit(ViewportChangedEvent, data.viewport as ViewportChangedEventDetails)
@@ -76,7 +75,7 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
                 }
 
                 ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
-                // ctx.requestUpdate()
+                ctx.requestUpdate()
             })
         } else {
             s.scene = createScene(data)
