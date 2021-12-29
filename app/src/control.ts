@@ -16,7 +16,7 @@ export class ViewportChanged {
 
 export type Message =  BattleMapUpdated | ViewportChanged 
 
-export function update(model: Model, msg: Message, ctx: wecco.AppContext<Message>): Model | typeof wecco.NoModelChange {    
+export function update(model: Model, msg: Message): Model | typeof wecco.NoModelChange {    
     switch (msg.command) {
         case "battleMap-updated":
             return notify(new Model(model.type, model.id, msg.battleMap, model.viewport, model.ws))
