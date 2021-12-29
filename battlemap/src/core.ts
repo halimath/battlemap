@@ -47,3 +47,8 @@ export function createScene(data: BattleMap): scenic.Scene {
     )
 }
 
+export const BattleMapUpdatedEvent = "battlemapUpdated"
+export type BattleMapUpdatedEventDetails = BattleMap
+
+export const ViewportChangedEvent = "viewportchanged"
+export type ViewportChangedEventDetails = scenic.Viewport

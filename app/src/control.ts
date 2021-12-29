@@ -1,6 +1,5 @@
 import * as wecco from "@weccoframework/core"
 import * as battlemap from "@halimath/battlemap"
-import { showNotification } from "./notification"
 import { Model } from "./model"
 
 export class BattleMapUpdated {
@@ -9,37 +8,21 @@ export class BattleMapUpdated {
     constructor (readonly battleMap: battlemap.BattleMap) {}
 }
 
-export class Join {
-    readonly command = "join"
+export class ViewportChanged {
+    readonly command = "viewport-changed"
 
-    constructor (readonly id: string) {}
+    constructor (readonly viewport: battlemap.Viewport) {}
 }
 
-export type Message =  BattleMapUpdated | Join
+export type Message =  BattleMapUpdated | ViewportChanged 
 
-export function update(model: Model, msg: Message, ctx: wecco.AppContext<Message>): Model | typeof wecco.NoModelChange {
+export function update(model: Model, msg: Message, ctx: wecco.AppContext<Message>): Model | typeof wecco.NoModelChange {    
     switch (msg.command) {
         case "battleMap-updated":
-            return notify(new Model(model.view, model.id, msg.battleMap, model.ws))
-        case "join":
-            return join(msg.id, ctx)
+            return notify(new Model(model.type, model.id, msg.battleMap, model.viewport, model.ws))
+        case "viewport-changed":
+            return new Model(model.type, model.id, model.battleMap, msg.viewport, model.ws)
     }
-}
-
-function join(id: string, ctx: wecco.AppContext<Message>): Model {
-    const m = Model.join(id)
-    m.ws.addEventListener("message", msg => {
-        try {
-            ctx.emit(new BattleMapUpdated(battlemap.unmarshalBattleMap(msg.data)))
-        } catch (e) {
-            console.error(e)
-        }
-    })
-    m.ws.addEventListener("close", () => {
-        showNotification("The editor closed the map.")
-    })
-
-    return m
 }
 
 function notify(m: Model): Model {

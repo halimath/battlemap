@@ -2,11 +2,9 @@
 import * as scenic from "@halimath/scenic"
 import * as wecco from "@weccoframework/core"
 
-import { BattleMap, createScene, updatePositions } from "../core"
+import { BattleMap, createScene, updatePositions, BattleMapUpdatedEvent, BattleMapUpdatedEventDetails, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
 import { Drawing, Token, Zone, GridSize } from "../shapes"
 import { DefaultDrawingStyle, DefaultZoneStyle, DefaultTokenColor } from "../styles"
-
-import styles from "./editor.css"
 
 export type Action = "move" | "draw" | "zone" | "token" | "remove"
 
@@ -17,11 +15,7 @@ export interface EditorData extends BattleMap {
     tokenColor?: string
 }
 
-export const UpdatedEvent = "battlemapUpdated"
-
-export type UpdatedEventDetails = BattleMap
-
-export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate => {
+export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate => {    
     data.background = data.background ?? []
     data.explanations = data.explanations ?? []
     data.tokens = data.tokens ?? []
@@ -40,6 +34,13 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
             s = scenic.Scenic.create({
                 canvas: canvas,
                 scene: createScene(data),
+                move:  data.action === "move",
+                select:  data.action === "move",
+                drawingMode:  (data.action === "zone") ? "rect" : (data.action === "draw" ? "poly" : null),
+                drawingStyle:  scenic.Style.create(data.action === "zone" ? DefaultZoneStyle : DefaultDrawingStyle),
+                grid:  data.grid ?? false,
+                viewport: data.viewport ?? scenic.Viewport.create({ origin: 5 }),
+    
                 resize: true,
                 zoom: true,
                 selectionStyle: {
@@ -52,11 +53,12 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
                 gridSize: GridSize,
             }).on("sceneUpdated", evt => {
                 updatePositions(data, evt.source.scene)
-                ctx.emit(UpdatedEvent, data)
+                ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
                 // No need to trigger a repaint here. Simply update our element's model to reflect the
                 // changes made by scenic.
             }).on("viewportChanged", evt => {
                 data.viewport = evt.source.viewport
+                ctx.emit(ViewportChangedEvent, data.viewport as ViewportChangedEventDetails)
                 // No need to trigger a repaint here. Simply update our element's model to reflect the
                 // changes made by scenic.            
             }).on("drawingFinished", evt => {
@@ -73,32 +75,100 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
                     }))
                 }
 
-                ctx.emit(UpdatedEvent, data)
-                ctx.requestUpdate()
+                ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
+                // ctx.requestUpdate()
             })
+        } else {
+            s.scene = createScene(data)
+            s.move = data.action === "move"
+            s.select = data.action === "move"
+            s.drawingMode = (data.action === "zone") ? "rect" : (data.action === "draw" ? "poly" : null)
+            s.drawingStyle = scenic.Style.create(data.action === "zone" ? DefaultZoneStyle : DefaultDrawingStyle)
+            s.grid = data.grid ?? false
+            s.viewport = data.viewport ?? s.viewport
         }
-
-        s.scene = createScene(data)
-
-        s.move = data.action === "move"
-        s.select = data.action === "move"
-        s.drawingMode = (data.action === "zone") ? "rect" : (data.action === "draw" ? "poly" : null)
-        s.drawingStyle = scenic.Style.create(data.action === "zone" ? DefaultZoneStyle : DefaultDrawingStyle)
-        s.grid = data.grid ?? false
-        s.viewport = data.viewport ?? s.viewport
     }
 
-    const styleElement = document.createElement("style")
-    styleElement.textContent = styles
-
-    return wecco.shadow([
-        styleElement,
-        wecco.html`
+    return wecco.shadow(wecco.html`
             <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+            <style>
+                :host {
+                    --toolbar-border: 2px solid rgb(7 89 133);
+                    --toolbar-button-color: rgb(2 132 199);
+                    --toolbar-button-color-selected: rgb(7 89 133);
+                    --toolbar-button-color-disabled: #7c7c7c;
+
+                    display: flex;
+                    align-items: stretch;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                .material-icons {
+                    vertical-align: middle;
+                }
+
+                .toolbar {
+                    min-width: 8rem;
+
+                    border-right: var(--toolbar-border);
+                    padding: 2px;
+
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+
+                    background-color: #eaeaea;
+                }
+
+                .toolbar  .divider {
+                    min-height: 1rem;
+                }
+
+                .toolbar  button {
+                    min-width: 6rem;
+                    margin-bottom: 4px;
+
+                    background-color: var(--toolbar-button-color);
+                    color: white;
+
+                    border: 1px solid var(--toolbar-button-color);
+                    border-radius: 4px;
+                }
+
+                .toolbar input[type="color"] {
+                    border: 1px solid var(--toolbar-button-color);
+                    border-radius: 4px;
+                    min-width: 6rem;
+                    margin-bottom: 4px;    
+                }
+
+                .toolbar .checkbox {
+                    min-width: 6rem;
+                    margin-bottom: 4px;
+                    display: flex;
+                    justify-content: space-between;
+                    color: var(--toolbar-button-color);
+                }
+
+                .toolbar  button.selected {
+                    background-color: var(--toolbar-button-color-selected);
+                }
+
+                .toolbar  button:disabled {
+                    border-color: var(--toolbar-button-color-disabled);
+                    background-color: var(--toolbar-button-color-disabled);
+                }
+
+                canvas {
+                    flex-grow: 4;
+                }                 
+            </style>
             ${toolbar(data, ctx)}
             <canvas @update=${createScenic}></canvas>
-        `
-    ])
+        `)
 })
 
 function addToken(data: EditorData, ctx: wecco.RenderContext) {
@@ -108,8 +178,18 @@ function addToken(data: EditorData, ctx: wecco.RenderContext) {
     }))
     data.action = "move"
 
-    ctx.emit(UpdatedEvent, data)
     ctx.requestUpdate()
+    ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
+}
+
+function clear(data: EditorData, ctx: wecco.RenderContext) {
+    data.background = []
+    data.explanations = []
+    data.tokens = []
+    data.viewport = undefined
+
+    ctx.requestUpdate()
+    ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
 }
 
 function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate {
@@ -136,13 +216,7 @@ function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdat
                 Grid
             </div>
             <div class="divider"></div>
-            <button @click=${() => {
-                data.background = []
-                data.explanations = []
-                data.tokens = []
-                data.viewport = undefined                
-                ctx.requestUpdate()
-        }}><i class="material-icons">delete</i></button>
+            <button @click=${clear}><i class="material-icons">delete</i></button>
         </div>
     `
 }

@@ -29,13 +29,14 @@ class BattleMapParticipants {
     }
 }
 
-const PathPattern = /^\/(?<action>(edit)|(view))\/(?<id>.*)$/
+const PathPattern = /^\/ws\/(?<action>(edit)|(view))\/(?<id>.*)$/
 
 export const wsServer = new ws.Server({ noServer: true })
 wsServer.on("connection", (socket, req) => {
     l.debug("got connection")
 
     const match = PathPattern.exec(req.url ?? "")
+
     if (!match || !match.groups?.action || !match.groups?.id) {
         l.warn(`invalid ws path: '${req.url}'`)
         socket.close()

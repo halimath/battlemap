@@ -31,7 +31,7 @@
     "dist"
   ],
   "dependencies": {
-    "@weccoframework/core": "^0.21.3",
+    "@weccoframework/core": "^0.21.4",
     "@halimath/scenic": "file:../scenic"
   },
   "devDependencies": {
@@ -40,7 +40,6 @@
     "rollup-plugin-typescript2": "^0.31.1",
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-node-resolve": "^13.1.1",
-    "rollup-plugin-import-css": "^3.0.2",
     "eslint": "^8.5.0",
     "@typescript-eslint/eslint-plugin": "^5.8.0"
   }

@@ -8,6 +8,12 @@ export default {
 
     output: [
         {
+            file: `dist/index.umd.js`,
+            name: name,
+            format: "umd",
+            sourcemap: true
+        },
+        {
             file: `dist/index.esm.js`,
             name: name,
             format: "esm",

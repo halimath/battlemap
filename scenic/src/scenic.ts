@@ -308,8 +308,6 @@ export class Scenic {
                 }
             }
 
-
-
             try {
                 ctx.save()
                 this.viewport.applyTranspose(ctx)
@@ -413,17 +411,29 @@ export class Scenic {
         try {
             if (this.drawingMode !== null) {
                 this.finishDraw(p)
-            }
+                return
+            }    
 
             if (this.select) {
                 if (this.interactOrigin?.isSame(p)) {
                     this.handleSelection(p, ctrlKey)
-                } else if (this.scene.selected.length > 0) {
+                    return
+                } 
+                
+                if (this.scene.selected.length > 0) {
                     this.emit({
                         eventName: "sceneUpdated",
                         source: this,
                     })
+                    return
                 }
+            }
+
+            if (this.move && !this.interactOrigin.isSame(p)) {
+                this.emit({
+                    eventName: "viewportChanged",
+                    source: this,
+                })    
             }
         } finally {
             this.interactLastCheckpoint = null
@@ -467,10 +477,6 @@ export class Scenic {
 
         this.viewport = this.viewport.move(drag)
         this.repaint()
-        this.emit({
-            eventName: "viewportChanged",
-            source: this,
-        })
     }
 
     private onZoom = (evt: WheelEvent) => {

@@ -3,13 +3,15 @@ import { defineConfig } from "vite"
 export default defineConfig({
     server: {
         proxy: {
-            "/edit": {
+            "/ws": {
                 target: "http://localhost:8080",
                 ws: true
             },
-            "/view": {
-                target: "http://localhost:8080",
-                ws: true
+            "/edit/*": {
+                forward: "http://localhost:3000/",
+            },
+            "/view/*": {
+                forward: "http://localhost:3000/",
             },
         }
     }

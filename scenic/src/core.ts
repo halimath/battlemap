@@ -1,15 +1,20 @@
-export type XY = [number, number] | [number] | number
+export type XYObject = { x: number, y: number }
+export type XY = XYObject | [number, number] | [number] | number
+
+function isXYObject (x: XY): x is XYObject {
+    return typeof x === "object" && ("x" in x) && ("y" in x)
+} 
 
 export class Dimension {
     public readonly y: number
 
-    static create(p: Dimension | XY): Dimension {
-        if (p instanceof Dimension) {
-            return p
+    static create(p: XY): Dimension {       
+        if (isXYObject(p)) {
+            return new Dimension(p.x, p.y)
         }
 
         if (Array.isArray(p)) {
-            return new Dimension(p[0], p.length > 1 ? p[1] : p[0])
+            return new Dimension(p[0], p[1] ?? p[0])
         }
 
         return new Dimension(p, p)
@@ -42,8 +47,8 @@ export class Point {
     }
 
     static create(p: Point | XY): Point {
-        if (p instanceof Point) {
-            return p
+        if (isXYObject(p)) {
+            return new Point(p.x, p.y)
         }
 
         if (Array.isArray(p)) {
@@ -61,7 +66,7 @@ export class Point {
         if (evt.touches.length === 0) {
             throw new Error("empty touches")
         }
-        
+
         const bcr = (evt.target as HTMLElement).getBoundingClientRect()
 
         return new Point(evt.touches[0].clientX - bcr.left, evt.touches[0].clientY - bcr.top)

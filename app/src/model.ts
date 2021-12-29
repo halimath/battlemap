@@ -1,26 +1,27 @@
 import * as battlemap from "@halimath/battlemap"
 
-export type View = "editor" | "viewer"
+export type Type = "editor" | "viewer"
 
 export class Model {
-    static editor(): Model {
-        const id = randomId()
-        return new Model("editor", id, {}, new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/edit/${id}`))
+    static editor(id?: string): Model {
+        id = id ?? randomId()
+        return new Model("editor", id, {}, battlemap.Viewport.create({ origin: 5 }), new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/ws/edit/${id}`))
     }
 
     static join(id: string): Model {
-        return new Model("viewer", id, {}, new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/view/${id}`))
+        return new Model("viewer", id, {}, battlemap.Viewport.create({ origin: 5 }), new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/ws/view/${id}`))
     }
 
     constructor(
-        readonly view: View,
+        readonly type: Type,
         readonly id: string,
         readonly battleMap: battlemap.BattleMap,
+        readonly viewport: battlemap.Viewport,
         readonly ws: WebSocket,
     ) { }
 
     get shareUrl(): string {
-        return `${document.location.protocol}//${document.location.host}/join/${this.id}`
+        return `${document.location.protocol}//${document.location.host}/view/${this.id}`
     }
 }
 

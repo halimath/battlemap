@@ -1,14 +1,15 @@
 import * as wecco from "@weccoframework/core"
 import * as scenic from "@halimath/scenic"
 
-import { BattleMap, createScene } from "../core"
+import { BattleMap, createScene, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
 
 export interface ViewerData extends BattleMap {
     viewport?: scenic.Viewport
 }
 
-export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData): wecco.ElementUpdate => {
+export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: wecco.RenderContext): wecco.ElementUpdate => {
     const createScenic = (e: Event) => {
+        console.log(data.viewport)
         const canvas = e.target as HTMLCanvasElement
 
         let s = scenic.Scenic.forCanvas(canvas)
@@ -17,6 +18,9 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData): wecco
             s = scenic.Scenic.create({
                 canvas: canvas,
                 scene: createScene(data),
+                viewport: data.viewport ?? scenic.Viewport.create({
+                    origin: [5, 5],
+                }),    
                 move: true,
                 select: false,
                 resize: true,
@@ -26,13 +30,12 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData): wecco
                     data.viewport = evt.source.viewport
                     // No need to trigger a repaint here. Simply update our element's model to reflect the
                     // changes made by scenic.
+                    ctx.emit(ViewportChangedEvent, data.viewport as ViewportChangedEventDetails)
                 })
-        }
-        
-        s.scene = createScene(data)
-        s.viewport = data.viewport ?? scenic.Viewport.create({
-            origin: [5, 5],
-        })
+        } else {
+            s.scene = createScene(data)
+            s.viewport = data.viewport ?? s.viewport
+        }    
     }
 
     return wecco.shadow(wecco.html`
