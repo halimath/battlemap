@@ -216,7 +216,7 @@ function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdat
                 Grid
             </div>
             <div class="divider"></div>
-            <button @click=${clear}><i class="material-icons">delete</i></button>
+            <button @click=${clear.bind(undefined, data, ctx)}><i class="material-icons">delete</i></button>
         </div>
     `
 }

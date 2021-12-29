@@ -5,38 +5,35 @@ import { Model } from "./model"
 import { showNotification } from "./notification"
 
 export function root(model: Model, ctx: wecco.AppContext<Message>): wecco.ElementUpdate {
-    let component: wecco.WeccoElement<any>
-    
-    if (model.type === "viewer") {
-        component = battlemap.Viewer({
+    const init = (evt: CustomEvent) => {
+        const editor = evt.target as wecco.WeccoElement<battlemap.EditorData>
+        editor.setData({
             background: model.battleMap.background,
             explanations: model.battleMap.explanations,
             tokens: model.battleMap.tokens,
             viewport: model.viewport,
         })
 
-        history.pushState(null, "", `/view/${model.id}`)
-    } else {
-        component = battlemap.Editor({
-            background: model.battleMap.background,
-            explanations: model.battleMap.explanations,
-            tokens: model.battleMap.tokens,
-            viewport: model.viewport,
-        })
-        component.addEventListener(battlemap.BattleMapUpdatedEvent, (evt: Event) => {
+        editor.addEventListener(battlemap.BattleMapUpdatedEvent, (evt: Event) => {
             ctx.emit(new BattleMapUpdated((evt as CustomEvent).detail as battlemap.BattleMap))
         })
 
-        history.pushState(null, "", `/edit/${model.id}`)
+        editor.addEventListener(battlemap.ViewportChangedEvent, evt => {
+            ctx.emit(new ViewportChanged((evt as CustomEvent).detail as battlemap.Viewport))
+        })
+    
     }
-
-    component.addEventListener(battlemap.ViewportChangedEvent, evt => {
-        ctx.emit(new ViewportChanged((evt as CustomEvent).detail as battlemap.Viewport))
-    })
-
+    
+    if (model.type === "viewer") {
+        return wecco.html`
+            ${appbar(model)}
+            <battlemap-viewer @update=${init}></battlemap-viewer>
+        `
+    }
+        
     return wecco.html`
         ${appbar(model)}
-        ${component}
+        <battlemap-editor @update=${init}></battlemap-editor>
     `
 }
 

@@ -31,5 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return
     }
 
-    wecco.app(Model.editor, update, root, "#app")
+    const model = Model.editor()
+    history.pushState(null, "", `/edit/${model.id}`)
+    wecco.app(() => model, update, root, "#app")
 })
