@@ -33,6 +33,7 @@ const PathPattern = /^\/ws\/(?<action>(edit)|(view))\/(?<id>.*)$/
 
 export const wsServer = new ws.Server({ noServer: true })
 wsServer.on("connection", (socket, req) => {
+    console.log(req.headers)
     l.debug("got connection")
 
     const match = PathPattern.exec(req.url ?? "")
