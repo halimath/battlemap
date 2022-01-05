@@ -11,4 +11,4 @@ export { Layer, Scene, SceneElement, PositionedPaintable, randomId } from "./src
 export type { SceneElementOptions, Paintable, PositionedPaintableOptions } from "./src/scene"
 
 export { Scenic } from "./src/scenic"
-export type { ScenicOptions, EventName, EventListener, ScenicEvent, DrawingFinishedEvent } from "./src/scenic"
+export type { ScenicOptions, EventName, EventListener, ScenicEvent, DrawingFinishedEvent, DrawingMode } from "./src/scenic"

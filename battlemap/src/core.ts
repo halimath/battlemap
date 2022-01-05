@@ -10,6 +10,7 @@ export interface BattleMap {
     background?: Array<Shape>
     explanations?: Array<Shape>
     tokens?: Array<Shape>
+    grid?: boolean
 }
 
 export function updatePositions (battleMap: BattleMap, scene: scenic.Scene): void {

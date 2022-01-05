@@ -29,9 +29,33 @@ export class Drawing implements Shape {
     ) { }
 
     createSceneElement(): scenic.SceneElement {
+        let minX = 0
+        let maxX = 0
+        let minY = 0
+        let maxY = 0
+
+        this.points.forEach(p => {
+            if (p.x < minX) {
+                minX = p.x
+            }
+            if (p.x > maxX) {
+                maxX = p.x
+            }
+            if (p.y < minY) {
+                minY = p.y
+            }
+            if (p.y > maxY) {
+                maxY = p.y
+            }
+        })
+
+        const outline = new Path2D()
+        outline.rect(minX - 10, minY - 10, maxX - minX + 20, maxY - minY + 20)
+
         return scenic.SceneElement.create({
             id: this.id,
             at: this.at,
+            outline: outline,
             paintables: scenic.Path.create({
                 d: this.points,
                 style: DefaultDrawingStyle,
@@ -68,9 +92,13 @@ export class Zone implements Shape {
     ) { }
 
     createSceneElement(): scenic.SceneElement {
+        const outline = new Path2D()
+        outline.rect(-10, -10, this.size.x + 20, this.size.y + 20)
+
         return scenic.SceneElement.create({
             id: this.id,
             at: this.at,
+            outline: outline,
             paintables: [
                 scenic.Path.rectangle({
                     size: this.size,

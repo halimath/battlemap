@@ -13,7 +13,7 @@ export type CanvasSelector = HTMLCanvasElement | string
  * `DrawingMode` defines how drawing on a canvas should be handled. The system either draws a rect from start, to end,
  * follows the movement by drawing a poly-gon or drawing is disabled.
  */
-export type DrawingMode = "rect" | "poly" | null
+export type DrawingMode = "rect" | "line" | null
 
 /**
  * `ScenicOptions` defines the options passed to `Scenic.create` that initialize a `Scenic` to use.
@@ -66,7 +66,7 @@ export interface ScenicEvent {
 export interface DrawingFinishedEvent extends ScenicEvent {
     /** 
      * Contains a list of all relevant points visitied. For drawing mode "rect" this list always contains two
-     * points: start and end. For drawing mode "poly" this contains all "stops".
+     * points: start and end. For drawing mode "line" this contains all "stops".
      */
     points: Array<Point>
     mode: DrawingMode
@@ -531,7 +531,7 @@ export class Scenic {
             if (this.drawnPoints === null) {
                 this.drawnPoints = [this.viewport.toCoordinateSpace(currentPoint)]
             }
-        } else if (this.drawingMode === "poly") {
+        } else if (this.drawingMode === "line") {
             if (this.drawingPath === null) {
                 this.drawingPath = new Path2D()
                 this.drawingPath.moveTo(this.interactOrigin!.x, this.interactOrigin!.y)
@@ -554,7 +554,7 @@ export class Scenic {
         if (hit === null) {
             this.scene.unselectAll()
         } else {
-            if (addToSelection) {
+            if (!addToSelection) {
                 this.scene.unselectAll()
             }
 

@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ws.addEventListener("message", msg => {
             try {
                 const map = battlemap.unmarshalBattleMap(msg.data)
-                editor.setData(map)                
+                editor.setData(map)
             } catch (e) {
                 console.error(e)
             }

@@ -1,6 +1,7 @@
 import * as wecco from "@weccoframework/core"
 import * as scenic from "@halimath/scenic"
 
+import { GridSize } from "../shapes"
 import { BattleMap, createScene, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
 
 export interface ViewerData extends BattleMap {
@@ -23,7 +24,9 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: w
                 move: true,
                 select: false,
                 resize: true,
-                zoom: true
+                zoom: true,
+                grid: data.grid ?? false,
+                gridSize: GridSize,
             })
                 .on("viewportChanged", evt => {
                     data.viewport = evt.source.viewport
@@ -34,6 +37,7 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: w
         } else {
             s.scene = createScene(data)
             s.viewport = data.viewport ?? s.viewport
+            s.grid = data.grid ?? false
         }    
     }
 

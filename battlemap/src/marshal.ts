@@ -15,6 +15,7 @@ interface MarshaledBattleMap {
     background: Array<MarshaledShape>
     explanations: Array<MarshaledShape>
     tokens: Array<MarshaledShape>
+    grid: boolean
 }
 
 export function marshalBattleMap(m: BattleMap): string {
@@ -22,6 +23,7 @@ export function marshalBattleMap(m: BattleMap): string {
         background: m.background?.map(marshalShape) ?? [],
         explanations: m.explanations?.map(marshalShape) ?? [],
         tokens: m.tokens?.map(marshalShape) ?? [],
+        grid: m.grid ?? false,
     })
 }
 
@@ -32,6 +34,7 @@ export function unmarshalBattleMap(s: string): BattleMap {
         background: o.background.map(unmarshalShape),
         explanations: o.explanations.map(unmarshalShape),
         tokens: o.tokens.map(unmarshalShape),
+        grid: o.grid,
     }
 }
 

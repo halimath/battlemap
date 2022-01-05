@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@halimath/battlemap": "file:../battlemap",
-    "@weccoframework/core": "^0.21.5",
+    "@weccoframework/core": "^0.21.6",
     "postcss": "^8.4.5",
     "tailwindcss": "^3.0.4",
     "typescript": "^4.4.4",
