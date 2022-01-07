@@ -167,22 +167,21 @@ function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdat
             <div class="divider"></div>
             
             <div class="checkbox">
-                <input type="checkbox" ?checked=${data.showGrid ?? false} @change=${(e: InputEvent) => {
+                <input type="checkbox" .checked=${data.showGrid ?? false} @change=${(e: InputEvent) => {
                 data.showGrid = (e.target as HTMLInputElement).checked
-                if ((!data.showGrid) && data.grid) {
-                    data.grid = false
-                    ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
-                }
+                data.grid = data.showGrid && data.grid
+                ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
                 ctx.requestUpdate()
             }}>
                 Grid
             </div>
             <div class="checkbox">
-                <input type="checkbox" ?checked=${data.grid ?? false} ?disabled=${!data.showGrid} @change=${(e: InputEvent) => {
+                <input type="checkbox" .checked=${data.grid ?? false} ?disabled=${!data.showGrid} @change=${(e: InputEvent) => {
                 data.grid = (e.target as HTMLInputElement).checked
                 ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
+                ctx.requestUpdate()
             }}>
-                Activate on 
+                on Viewer
             </div>
             
             <div class="divider"></div>
