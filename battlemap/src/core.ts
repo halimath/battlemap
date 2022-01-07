@@ -19,6 +19,27 @@ export function updatePositions (battleMap: BattleMap, scene: scenic.Scene): voi
     })
 }
 
+export function removeShape(battleMap: BattleMap, ...shapeIds: Array<string>): void {
+    shapeIds.forEach(id => {
+        let idx = battleMap.background?.findIndex(s => s.id === id) ?? -1
+        if (idx >= 0) {
+            battleMap.background?.splice(idx, 1)
+            return
+        }
+
+        idx = battleMap.explanations?.findIndex(s => s.id === id) ?? -1
+        if (idx >= 0) {
+            battleMap.explanations?.splice(idx, 1)
+            return
+        }
+
+        idx = battleMap.tokens?.findIndex(s => s.id === id) ?? -1
+        if (idx >= 0) {
+            battleMap.tokens?.splice(idx, 1)
+        }
+    })
+}
+
 export function findShapeById (battleMap: BattleMap, id: string): Shape | null {
     return allShapes(battleMap).find(s => s.id === id) ?? null
 }

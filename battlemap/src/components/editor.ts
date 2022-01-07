@@ -2,7 +2,7 @@
 import * as scenic from "@halimath/scenic"
 import * as wecco from "@weccoframework/core"
 
-import { BattleMap, createScene, updatePositions, BattleMapUpdatedEvent, BattleMapUpdatedEventDetails, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
+import { BattleMap, createScene, updatePositions, removeShape, BattleMapUpdatedEvent, BattleMapUpdatedEventDetails, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
 import { Drawing, Token, Zone, GridSize } from "../shapes"
 import { DefaultDrawingStyle, DefaultZoneStyle, DefaultTokenColor } from "../styles"
 
@@ -17,6 +17,7 @@ export interface EditorData extends BattleMap {
     tokenColor?: string
     drawingMode?: scenic.DrawingMode
     fullscreen?: boolean
+    selectedIds?: Array<string>
 }
 
 export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate => {    
@@ -60,7 +61,11 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
                 data.viewport = evt.source.viewport
                 ctx.emit(ViewportChangedEvent, data.viewport as ViewportChangedEventDetails)
                 // No need to trigger a repaint here. Simply update our element's model to reflect the
-                // changes made by scenic.            
+                // changes made by scenic.
+            }).on("selectionChanged", evt => {
+                data.selectedIds = evt.source.scene.selected.map(e => e.id)
+                // No need to trigger a repaint here. Simply update our element's model to reflect the
+                // changes made by scenic.
             }).on("drawingFinished", evt => {
                 if (data.action === "zone") {
                     data.explanations?.push(Zone.create({
@@ -134,12 +139,22 @@ function clear(data: EditorData, ctx: wecco.RenderContext) {
     ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
 }
 
+function removeSelectedShapes(data: EditorData, ctx: wecco.RenderContext): void {    
+    if (!data.selectedIds?.length) {
+        return
+    }
+
+    removeShape(data, ...data.selectedIds)
+    ctx.emit(BattleMapUpdatedEvent, data)
+    ctx.requestUpdate()
+}
+
 function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate {
     return wecco.html`
         <div class="toolbar">
             
             <button @click=${() => { data.action = "move"; ctx.requestUpdate() }} class=${data.action === "move" ? "selected" : ""}><i class="material-icons">pan_tool</i></button>
-            <button @click=${() => { data.action = "remove"; ctx.requestUpdate() }} disabled class=${data.action === "remove" ? "selected" : ""}><i class="material-icons">delete</i></button>
+            <button @click=${removeSelectedShapes.bind(null, data, ctx)}><i class="material-icons">delete</i></button>
             
             <div class="divider"></div>
             
