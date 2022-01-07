@@ -4,8 +4,11 @@ import * as scenic from "@halimath/scenic"
 import { GridSize } from "../shapes"
 import { BattleMap, createScene, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
 
+import styles from "./viewer.css"
+
 export interface ViewerData extends BattleMap {
     viewport?: scenic.Viewport
+    fullscreen?: boolean
 }
 
 export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: wecco.RenderContext): wecco.ElementUpdate => {
@@ -42,18 +45,31 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: w
     }
 
     return wecco.shadow(wecco.html`
-        <style>           
-            :host {           
-                display: flex;
-                align-items: stretch;
-            }
-
-            canvas {
-                flex-grow: 4;
-            }
-        </style>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <style .innerText=${styles}></style>
+        ${toolbar(data, ctx)}
         <canvas @update=${createScenic}></canvas>
     `)
 })
+
+function toolbar(data: ViewerData, ctx: wecco.RenderContext): wecco.ElementUpdate {
+    return wecco.html`
+        <div class="toolbar">           
+            <button @click=${toggleFullscreen.bind(undefined, data, ctx)}><i class="material-icons">${data.fullscreen ? "fullscreen_exit" : "fullscreen"}</i></button>
+        </div>
+    `
+}
+
+function toggleFullscreen (data: ViewerData, ctx: wecco.RenderContext, evt: Event) {
+    if (data.fullscreen) {
+        data.fullscreen = false
+        document.exitFullscreen()
+    } else {
+        data.fullscreen = true;
+        ((evt.target as HTMLElement).getRootNode() as ShadowRoot)?.host.requestFullscreen()
+    }
+
+    ctx.requestUpdate()
+}
 
 

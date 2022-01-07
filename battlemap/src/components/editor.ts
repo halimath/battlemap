@@ -6,7 +6,8 @@ import { BattleMap, createScene, updatePositions, removeShape, BattleMapUpdatedE
 import { Drawing, Token, Zone, GridSize } from "../shapes"
 import { DefaultDrawingStyle, DefaultZoneStyle, DefaultTokenColor } from "../styles"
 
-import styles from "./editor.css"
+import viewerStyles from "./viewer.css"
+import editorStyles from "./editor.css"
 
 export type Action = "move" | "draw" | "zone" | "token" | "remove"
 
@@ -112,7 +113,8 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
 
     return wecco.shadow(wecco.html`
             <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-            <style .innerText=${styles}></style>
+            <style .innerText=${viewerStyles}></style>
+            <style .innerText=${editorStyles}></style>
             ${toolbar(data, ctx)}
             <canvas @update=${createScenic}></canvas>
         `)
