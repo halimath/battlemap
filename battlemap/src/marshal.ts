@@ -31,9 +31,9 @@ export function unmarshalBattleMap(s: string): BattleMap {
     const o: MarshaledBattleMap = JSON.parse(s)
 
     return {
-        background: o.background.map(unmarshalShape),
-        explanations: o.explanations.map(unmarshalShape),
-        tokens: o.tokens.map(unmarshalShape),
+        background: (o.background ?? []).map(unmarshalShape),
+        explanations: (o.explanations ?? []).map(unmarshalShape),
+        tokens: (o.tokens ?? []).map(unmarshalShape),
         grid: o.grid,
     }
 }

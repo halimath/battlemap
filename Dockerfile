@@ -1,4 +1,4 @@
-FROM node:16 as BUILDER
+FROM node:16 as NODE_BUILDER
 
 WORKDIR /src/scenic
 COPY scenic/package*.json ./
@@ -10,10 +10,6 @@ RUN npm i
 
 WORKDIR /src/app
 COPY app/package*.json ./
-RUN npm i
-
-WORKDIR /src/service
-COPY service/package*.json ./
 RUN npm i
 
 ###
@@ -31,16 +27,19 @@ COPY app ./
 RUN ls .
 RUN npm run build
 
-WORKDIR /src/service
-COPY service ./
-RUN npm run build
 
-FROM node:16
+FROM golang:1.17-alpine AS GO_BUILDER
 
 WORKDIR /app
 
-COPY --from=BUILDER /src/service/node_modules ./node_modules/
-COPY --from=BUILDER /src/service/dist/index.js .
-COPY --from=BUILDER /src/app/dist ./public/
+COPY backend ./
+COPY --from=NODE_BUILDER /src/app/dist ./internal/boundary/public
+RUN go build
 
-ENTRYPOINT [ "node", "index.js" ]
+FROM alpine:latest
+
+COPY --from=GO_BUILDER /app/backend /backend
+
+EXPOSE 8080
+
+ENTRYPOINT [ "/backend" ]
