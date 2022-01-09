@@ -17,9 +17,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 
-            os: ubuntu-latest
-            go: '1.17'
+          go-version: '1.17'
 
       - name: Checkout sources
         uses: actions/checkout@v2
