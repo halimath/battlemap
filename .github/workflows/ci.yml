@@ -8,14 +8,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
       - name: Set up Node
         uses: actions/setup-node@v2
         with:
           node-version: '16'
           cache: npm
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 
+            os: ubuntu-latest
+            go: '1.17'
+
+      - name: Checkout sources
+        uses: actions/checkout@v2
       
       - name: Install dependencies for @halimath/scenic
         working-directory: ./scenic
@@ -41,10 +48,14 @@ jobs:
         working-directory: ./app
         run: npm run build
 
-      - name: Install dependencies for service
-        working-directory: ./service
-        run: npm i
+      - name: Copy static assets
+        working-directory: ./backend
+        run: cp -r ../app/dist ./internal/boundary/public
 
-      - name: Build service
-        working-directory: ./service
-        run: npm run build
+      - name: Build backend
+        working-directory: ./backend
+        run: go build
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: go test -cover ./...
