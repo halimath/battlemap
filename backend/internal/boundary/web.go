@@ -29,7 +29,8 @@ func Provide(cfg config.Config, ctrl *control.BattleMapController, version, comm
 	e.HidePort = true
 
 	e.Pre(middleware.Rewrite(map[string]string{
-		"/join/*": "/",
+		"/edit/*": "/",
+		"/view/*": "/",
 	}))
 
 	e.HTTPErrorHandler = handleError
