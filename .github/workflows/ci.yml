@@ -43,6 +43,10 @@ jobs:
         working-directory: ./app
         run: npm i
 
+      - name: Generate API client
+        working-directory: ./app
+        run: npm run generate-api-client
+
       - name: Build app
         working-directory: ./app
         run: npm run build
