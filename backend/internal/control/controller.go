@@ -1,151 +1,72 @@
 package control
 
 import (
+	"context"
 	"errors"
 	"sync"
+	"time"
 
-	"github.com/halimath/battlemap/backend/internal/entity"
-	"github.com/halimath/kvlog"
-)
-
-const (
-	viewerChannelBufferSize = 10
+	"github.com/halimath/battlemap/backend/internal/entity/battlemap"
 )
 
 var (
-	ErrAlreadyExists  = errors.New("battle map already exists")
-	ErrNotExists      = errors.New("battle map does not exist")
-	ErrViewerNotFound = errors.New("viewer not found")
+	ErrForbidden = errors.New("not allowed to update battlemap")
+	ErrNotExists = errors.New("battle map does not exist")
 )
 
-type battleMapMultiplexer struct {
-	id        string
-	lock      sync.Mutex
-	lastState entity.BattleMap
-	editor    chan entity.BattleMap
-	viewer    []chan entity.BattleMap
-}
-
-func (m *battleMapMultiplexer) run() {
-	for b := range m.editor {
-		kvlog.Info(kvlog.Evt("multiplexingBattlemapUpdate"), kvlog.KV("id", m.id))
-		m.lock.Lock()
-		m.lastState = b
-		for _, v := range m.viewer {
-			v <- m.lastState
-		}
-		m.lock.Unlock()
-	}
-
-	for _, v := range m.viewer {
-		close(v)
-	}
-}
-
-func (m *battleMapMultiplexer) close() {
-	close(m.editor)
-}
-
-func (m *battleMapMultiplexer) addViewer() <-chan entity.BattleMap {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	c := make(chan entity.BattleMap, viewerChannelBufferSize)
-
-	m.viewer = append(m.viewer, c)
-	c <- m.lastState
-
-	return c
-}
-
-func (m *battleMapMultiplexer) removeViewer(c <-chan entity.BattleMap) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	for i, vc := range m.viewer {
-		if vc == c {
-			close(vc)
-
-			m.viewer[i] = m.viewer[len(m.viewer)-1]
-			m.viewer = m.viewer[:len(m.viewer)-1]
-			return nil
-		}
-	}
-
-	return ErrViewerNotFound
+type battleMapEntry struct {
+	lock         sync.Mutex
+	data         battlemap.BattleMap
+	lastModified time.Time
+	userID       string
 }
 
 // --
 
 type BattleMapController struct {
 	lock sync.RWMutex
-	maps map[string]*battleMapMultiplexer
+	maps map[string]*battleMapEntry
 }
 
-func (c *BattleMapController) BeginEdit(id string) (chan<- entity.BattleMap, error) {
+func (c *BattleMapController) Update(ctx context.Context, userID string, data battlemap.BattleMap) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if _, ok := c.maps[id]; ok {
-		return nil, ErrAlreadyExists
-	}
-
-	m := &battleMapMultiplexer{
-		id:     id,
-		editor: make(chan entity.BattleMap),
-		viewer: make([]chan entity.BattleMap, 0),
-	}
-
-	go m.run()
-
-	c.maps[id] = m
-
-	return m.editor, nil
-}
-
-func (c *BattleMapController) EndEdit(id string) error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	b, ok := c.maps[id]
-
+	e, ok := c.maps[data.ID]
 	if !ok {
-		return ErrNotExists
+		e = &battleMapEntry{
+			userID: userID,
+		}
+		c.maps[data.ID] = e
 	}
 
-	b.close()
+	if e.userID != userID {
+		return ErrForbidden
+	}
 
-	delete(c.maps, id)
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	e.data = data
+	e.lastModified = time.Now()
 
 	return nil
 }
 
-func (c *BattleMapController) BeginView(id string) (<-chan entity.BattleMap, error) {
+func (c *BattleMapController) Load(ctx context.Context, id string) (battlemap.BattleMap, time.Time, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	b, ok := c.maps[id]
+	e, ok := c.maps[id]
 	if !ok {
-		return nil, ErrNotExists
+		return battlemap.BattleMap{}, time.Time{}, ErrNotExists
 	}
 
-	return b.addViewer(), nil
-}
-
-func (c *BattleMapController) EndView(id string, viewer <-chan entity.BattleMap) error {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
-	b, ok := c.maps[id]
-	if !ok {
-		return ErrNotExists
-	}
-
-	return b.removeViewer(viewer)
+	return e.data, e.lastModified, nil
 }
 
 func Provide() *BattleMapController {
 	return &BattleMapController{
-		maps: make(map[string]*battleMapMultiplexer),
+		maps: make(map[string]*battleMapEntry),
 	}
 }

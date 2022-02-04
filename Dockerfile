@@ -28,7 +28,7 @@ RUN ls .
 RUN npm run build
 
 
-FROM golang:1.17-alpine AS GO_BUILDER
+FROM golang:1.18-rc-alpine AS GO_BUILDER
 
 WORKDIR /app
 
@@ -37,6 +37,8 @@ COPY --from=NODE_BUILDER /src/app/dist ./internal/boundary/public
 RUN go build
 
 FROM alpine:latest
+
+RUN apk add tzdata
 
 COPY --from=GO_BUILDER /app/backend /backend
 

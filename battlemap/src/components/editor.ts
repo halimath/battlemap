@@ -1,13 +1,11 @@
 
 import * as scenic from "@halimath/scenic"
 import * as wecco from "@weccoframework/core"
-
-import { BattleMap, createScene, updatePositions, removeShape, BattleMapUpdatedEvent, BattleMapUpdatedEventDetails, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
-import { Drawing, Token, Zone, GridSize } from "../shapes"
-import { DefaultDrawingStyle, DefaultZoneStyle, DefaultTokenColor } from "../styles"
-
-import viewerStyles from "./viewer.css"
+import { BattleMap, BattleMapUpdatedEvent, BattleMapUpdatedEventDetails, createScene, DefaultDrawingStyle, DefaultTokenColor, DefaultZoneStyle, Drawing, GridSize, removeShape, Token, updatePositions, ViewportChangedEvent, ViewportChangedEventDetails, Zone } from "../core"
 import editorStyles from "./editor.css"
+import viewerStyles from "./viewer.css"
+
+
 
 export type Action = "move" | "draw" | "zone" | "token" | "remove"
 
@@ -21,9 +19,9 @@ export interface EditorData extends BattleMap {
     selectedIds?: Array<string>
 }
 
-export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate => {    
-    data.background = data.background ?? []
-    data.explanations = data.explanations ?? []
+export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdate => {
+    data.drawings = data.drawings ?? []
+    data.zones = data.zones ?? []
     data.tokens = data.tokens ?? []
     data.action = data.action ?? "move"
 
@@ -36,13 +34,13 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
             s = scenic.Scenic.create({
                 canvas: canvas,
                 scene: createScene(data),
-                move:  data.action === "move",
-                select:  data.action === "move",
-                drawingMode:  (data.action === "zone") ? "rect" : (data.action === "draw" ? (data.drawingMode ?? "line") : null),
-                drawingStyle:  scenic.Style.create(data.action === "zone" ? DefaultZoneStyle : DefaultDrawingStyle),
-                grid:  data.showGrid ?? false,
+                move: data.action === "move",
+                select: data.action === "move",
+                drawingMode: (data.action === "zone") ? "rect" : (data.action === "draw" ? (data.drawingMode ?? "line") : null),
+                drawingStyle: scenic.Style.create(data.action === "zone" ? DefaultZoneStyle : DefaultDrawingStyle),
+                grid: data.showGrid ?? false,
                 viewport: data.viewport ?? scenic.Viewport.create({ origin: 5 }),
-    
+
                 resize: true,
                 zoom: true,
                 selectionStyle: {
@@ -69,19 +67,19 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
                 // changes made by scenic.
             }).on("drawingFinished", evt => {
                 if (data.action === "zone") {
-                    data.explanations?.push(Zone.create({
+                    data.zones?.push(Zone.create({
                         at: evt.points[0],
                         size: evt.points[0].diff(evt.points[1]),
-                        label: `Zone #${data.explanations?.length + 1}`
+                        label: `Zone #${data.zones?.length + 1}`
                     }))
-                } else if (data.action === "draw") {                    
+                } else if (data.action === "draw") {
                     let points: Array<scenic.Point | scenic.XY>
 
                     if ((typeof data.drawingMode === "undefined") || (data.drawingMode === "line")) {
                         points = evt.points.map(p => p.translate(-evt.points[0].x, -evt.points[0].y))
                     } else if (data.drawingMode === "rect") {
                         points = [
-                            0, 
+                            0,
                             [evt.points[1].x - evt.points[0].x, 0],
                             [evt.points[1].x - evt.points[0].x, evt.points[1].y - evt.points[0].y],
                             [0, evt.points[1].y - evt.points[0].y],
@@ -91,7 +89,7 @@ export const Editor = wecco.define("battlemap-editor", (data: EditorData, ctx: w
                         throw new Error(`Unexpected drawing mode: '${data.drawingMode}'`)
                     }
 
-                    data.background?.push(Drawing.create({
+                    data.drawings?.push(Drawing.create({
                         at: evt.points[0],
                         points: points,
                     }))
@@ -132,8 +130,8 @@ function addToken(data: EditorData, ctx: wecco.RenderContext) {
 }
 
 function clear(data: EditorData, ctx: wecco.RenderContext) {
-    data.background = []
-    data.explanations = []
+    data.drawings = []
+    data.zones = []
     data.tokens = []
     data.viewport = undefined
 
@@ -141,7 +139,7 @@ function clear(data: EditorData, ctx: wecco.RenderContext) {
     ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
 }
 
-function removeSelectedShapes(data: EditorData, ctx: wecco.RenderContext): void {    
+function removeSelectedShapes(data: EditorData, ctx: wecco.RenderContext): void {
     if (!data.selectedIds?.length) {
         return
     }
@@ -162,7 +160,7 @@ function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdat
             
             <div class="control ${data.action === "draw" ? "selected" : ""}">
                 <button @click=${() => { data.action = "draw"; ctx.requestUpdate() }}><i class="material-icons">edit</i></button>
-                <select @change=${(e: Event) => {data.drawingMode = (e.target as HTMLSelectElement).value as scenic.DrawingMode; ctx.requestUpdate()}}>
+                <select @change=${(e: Event) => { data.drawingMode = (e.target as HTMLSelectElement).value as scenic.DrawingMode; ctx.requestUpdate() }}>
                     <option value="line">Line</option>
                     <option value="rect">Rect</option>
                 </select>
@@ -177,27 +175,27 @@ function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdat
             <div class="control ${data.action === "token" ? "selected" : ""}">
                 <button @click=${addToken.bind(null, data, ctx)} class=${data.action === "token" ? "selected" : ""}><i class="material-icons">add_circle</i></button>
                 <input type="color" value=${data.tokenColor ?? DefaultTokenColor.toHex()} @change=${(e: InputEvent) => {
-                    data.tokenColor = (e.target as HTMLInputElement).value
-                }}>
+            data.tokenColor = (e.target as HTMLInputElement).value
+        }}>
             </div>
             
             <div class="divider"></div>
             
             <div class="checkbox">
                 <input type="checkbox" .checked=${data.showGrid ?? false} @change=${(e: InputEvent) => {
-                data.showGrid = (e.target as HTMLInputElement).checked
-                data.grid = data.showGrid && data.grid
-                ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
-                ctx.requestUpdate()
-            }}>
+            data.showGrid = (e.target as HTMLInputElement).checked
+            data.grid = data.showGrid && data.grid
+            ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
+            ctx.requestUpdate()
+        }}>
                 Grid
             </div>
             <div class="checkbox">
                 <input type="checkbox" .checked=${data.grid ?? false} ?disabled=${!data.showGrid} @change=${(e: InputEvent) => {
-                data.grid = (e.target as HTMLInputElement).checked
-                ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
-                ctx.requestUpdate()
-            }}>
+            data.grid = (e.target as HTMLInputElement).checked
+            ctx.emit(BattleMapUpdatedEvent, data as BattleMapUpdatedEventDetails)
+            ctx.requestUpdate()
+        }}>
                 on Viewer
             </div>
             
@@ -212,7 +210,7 @@ function toolbar(data: EditorData, ctx: wecco.RenderContext): wecco.ElementUpdat
     `
 }
 
-function toggleFullscreen (data: EditorData, ctx: wecco.RenderContext, evt: Event) {
+function toggleFullscreen(data: EditorData, ctx: wecco.RenderContext, evt: Event) {
     if (data.fullscreen) {
         data.fullscreen = false
         document.exitFullscreen()

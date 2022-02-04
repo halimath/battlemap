@@ -1,0 +1,232 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: BattleMap
+  description: REST-API for the BattleMap app.
+  contact:
+    name: Alexander Metzner
+    email: alexander.metzner@gmail.com
+  license:
+    name: Apache License v2
+servers:
+  - url: "http://localhost:8080/api"
+security:
+  - bearer: []
+
+paths:
+  /version-info:
+    get:
+      tags:
+        - Version-Info
+      operationId: getVersionInfo
+      summary: Retrieve version information
+      responses:
+        "200":
+          description: Successful response
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/VersionInfo"
+
+  /auth/new:
+    post:
+      tags:
+        - Authorization
+      operationId: createAuthToken
+      summary: Create an authorization token for the client
+      responses:
+        "201":
+          description: A token has been created.
+          content:
+            "text/plain":
+              schema:
+                type: string
+                example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                description: The token
+
+  /maps/{id}:
+    get:
+      tags:
+        - BattleMap
+      operationId: getBattleMap
+      summary: Get the battle with the given id
+      description: Retrieves the full battle map data for the map identified by `id`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/BattleMap"
+        "404":
+          description: The battlemap has not been found.
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags:
+        - BattleMap
+      operationId: updateBattleMap
+      summary: Update the battle with the given id
+      description: Update the full battle map data for the map identified by `id`.
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The full battle map data
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/BattleMap"
+      responses:
+        "201":
+          description: Successful response
+        "403":
+          description: The user is not allowed to update the battle map.
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: The battlemap has not been found.
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: >
+        The security token obtained from `POST /auth/new` must be sent with the `Authorization` header of
+        scheme `Bearer`.
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: error connecting to database
+          description: Human-readable error message
+        code:
+          type: integer
+          description: error code
+      required:
+        - error
+        - code
+
+    VersionInfo:
+      type: object
+      properties:
+        version:
+          type: string
+          example: "0.1.0-rc1"
+          description: The version string of the backend component.
+        apiVersion:
+          type: string
+          example: "1.0.0"
+          description: The version string of the API specs.
+        commit:
+          type: string
+          example: 86a3f74745d83e2d90fb59c8b2df857592536119
+          description: Git commit hash of the backend code.
+      required:
+        - version
+        - apiVersion
+        - commit
+
+    BattleMap:
+      type: object
+      properties:
+        id:
+          type: string
+        grid:
+          type: boolean
+        drawings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Drawing"
+        zones:
+          type: array
+          items:
+            $ref: "#/components/schemas/Zone"
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/Token"
+      required:
+        - id
+        - grid
+        - drawings
+        - zones
+        - tokens
+
+    XY:
+      type: array
+      items:
+        type: integer
+      maxItems: 2
+      minItems: 2
+
+    Drawing:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          $ref: "#/components/schemas/XY"
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/XY"
+      required:
+        - id
+        - at
+        - points
+
+    Zone:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          $ref: "#/components/schemas/XY"
+        size:
+          $ref: "#/components/schemas/XY"
+        label:
+          type: string
+      required:
+        - id
+        - at
+        - size
+        - label
+
+    Token:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          $ref: "#/components/schemas/XY"
+        color:
+          type: string
+      required:
+        - id
+        - at
+        - color
