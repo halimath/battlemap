@@ -22,9 +22,13 @@ WORKDIR /src/battlemap
 COPY battlemap ./
 RUN npm run build
 
+WORKDIR /src/docs
+COPY docs/api.yaml .
+
 WORKDIR /src/app
 COPY app ./
 RUN ls .
+RUN npm run generate-api-client
 RUN npm run build
 
 
