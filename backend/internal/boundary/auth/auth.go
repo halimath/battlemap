@@ -15,7 +15,7 @@ import (
 
 const (
 	authTokenContextKey = "authToken"
-	authTokenIssuer     = "fate-core-remote-table"
+	authTokenIssuer     = "battlemap"
 )
 
 var (
