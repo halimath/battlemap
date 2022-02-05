@@ -2,18 +2,18 @@ package boundary
 
 import (
 	"embed"
+	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
-	"net/url"
+	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
+	"github.com/halimath/battlemap/backend/internal/boundary/auth"
 	"github.com/halimath/battlemap/backend/internal/control"
+	"github.com/halimath/battlemap/backend/internal/infra/config"
 	"github.com/halimath/kvlog"
-)
-
-const (
-	bufferSize = 1024
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var (
@@ -21,136 +21,80 @@ var (
 	staticFiles embed.FS
 )
 
-func ProvideHTTPServer(c *control.BattleMapController) http.Server {
-	r := mux.NewRouter()
+func Provide(cfg config.Config, ctrl *control.BattleMapController, version, commit string) *echo.Echo {
+	authProvider := auth.Provide(cfg)
 
-	r.HandleFunc("/ws/edit/{id}", handleEditConnect(c))
-	r.HandleFunc("/ws/view/{id}", handleViewConnect(c))
+	e := echo.New()
+	e.HideBanner = true
+	e.HidePort = true
+
+	e.Pre(middleware.Rewrite(map[string]string{
+		"/edit/*": "/",
+		"/view/*": "/",
+	}))
+
+	e.HTTPErrorHandler = handleError
+	e.Use(loggingMiddleware)
+
+	rest := e.Group("/api")
+	rest.Use(middleware.CORSWithConfig(middleware.CORSConfig{}))
+	rest.Use(auth.Middleware(authProvider))
+	handler := restHandler{
+		versionInfo: VersionInfo{
+			Version:    version,
+			Commit:     commit,
+			ApiVersion: "1.0.0",
+		},
+		controller:   ctrl,
+		authProvider: authProvider,
+	}
+	RegisterHandlers(rest, &handler)
 
 	staticFilesFS, err := fs.Sub(staticFiles, "public")
 	if err != nil {
 		panic(err)
 	}
 
-	r.PathPrefix("/edit").Handler(forwardMiddleware(r, "/"))
-	r.PathPrefix("/view").Handler(forwardMiddleware(r, "/"))
+	e.GET("/*", echo.WrapHandler(http.FileServer(http.FS(staticFilesFS))))
 
-	r.PathPrefix("/").Handler(http.FileServer(http.FS(staticFilesFS)))
-
-	return http.Server{
-		Addr: ":8080",
-		// Handler: kvlog.Middleware(kvlog.L, r),
-		Handler: r,
-	}
+	return e
 }
 
-func forwardMiddleware(next http.Handler, forward string) http.Handler {
-	if _, err := url.Parse(forward); err != nil {
-		panic(err)
+func handleError(err error, ctx echo.Context) {
+	e := Error{
+		Error: err.Error(),
+		Code:  http.StatusInternalServerError,
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.URL, _ = url.Parse(forward)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func handleEditConnect(ctrl *control.BattleMapController) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := mux.Vars(r)["id"]
-
-		upgrader := websocket.Upgrader{
-			ReadBufferSize:  bufferSize,
-			WriteBufferSize: bufferSize,
-		}
-
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			kvlog.Warn(kvlog.Evt("failedToUpgradeProtocol"), kvlog.Err(err))
-			return
-		}
-
-		c, err := ctrl.BeginEdit(id)
-		if err != nil {
-			conn.Close()
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		for {
-			t, data, err := conn.ReadMessage()
-			if err != nil {
-				if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-					kvlog.Info(kvlog.Evt("editorClosedMap"), kvlog.KV("id", id))
-					ctrl.EndEdit(id)
-					return
-				}
-
-				kvlog.Error(kvlog.Evt("errorReadingWSMessage"), kvlog.Err(err))
-				ctrl.EndEdit(id)
-				return
-			}
-
-			if t != websocket.TextMessage {
-				kvlog.Error(kvlog.Evt("invalidWSMessageType"), kvlog.KV("type", t))
-				ctrl.EndEdit(id)
-				return
-			}
-
-			dto, err := unmarshal(data)
-			if err != nil {
-				kvlog.Error(kvlog.Evt("invalidWSMessage"), kvlog.Err(err))
-				continue
-			}
-
-			kvlog.Info(kvlog.Evt("mapUpdateReceived"), kvlog.KV("id", id))
-
-			c <- convertBattleMapToEntity(dto)
-		}
+	if httpError, ok := err.(*echo.HTTPError); ok {
+		e.Code = httpError.Code
+		e.Error = fmt.Sprintf("%s", httpError.Message)
+	} else if errors.Is(err, control.ErrNotExists) {
+		e.Code = http.StatusNotFound
 	}
+
+	ctx.JSON(e.Code, e)
 }
 
-func handleViewConnect(ctrl *control.BattleMapController) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id := mux.Vars(r)["id"]
+func loggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		start := time.Now()
+		err := next(c)
+		reqTime := time.Since(start)
 
-		upgrader := websocket.Upgrader{
-			ReadBufferSize:  bufferSize,
-			WriteBufferSize: bufferSize,
-		}
-
-		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			kvlog.Warn(kvlog.Evt("failedToUpgradeProtocol"), kvlog.Err(err))
-			return
+			kvlog.Error(kvlog.Evt("requestError"), kvlog.Err(err))
+			c.Error(err)
 		}
 
-		c, err := ctrl.BeginView(id)
-		if err != nil {
-			conn.Close()
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		kvlog.Info(
+			kvlog.Evt("request"),
+			kvlog.KV("uri", c.Request().RequestURI),
+			kvlog.KV("method", c.Request().Method),
+			kvlog.KV("status", c.Response().Status),
+			kvlog.Dur(reqTime),
+		)
 
-		for b := range c {
-			kvlog.Info(kvlog.Evt("sendingUpdate"))
-			data, err := marshall(convertBattleMapFromEntity(b))
-			if err != nil {
-				kvlog.Error(kvlog.Evt("failedToMarshallDTO"), kvlog.Err(err))
-				continue
-			}
-
-			if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-				if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-					kvlog.Info(kvlog.Evt("viewerClosedWS"))
-					if err := ctrl.EndView(id, c); err != nil {
-						kvlog.Error(kvlog.Evt("errorEndingView"), kvlog.Err(err))
-					}
-					return
-				}
-			}
-		}
-		kvlog.Info(kvlog.Evt("closingViewer"))
-		conn.Close()
+		return nil
 	}
 }

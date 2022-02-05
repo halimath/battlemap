@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -8,12 +9,30 @@ import (
 
 	"github.com/halimath/battlemap/backend/internal/boundary"
 	"github.com/halimath/battlemap/backend/internal/control"
+	"github.com/halimath/battlemap/backend/internal/infra/config"
 	"github.com/halimath/kvlog"
+	"github.com/halimath/kvlog/filter"
+	"github.com/halimath/kvlog/formatter/jsonl"
+	"github.com/halimath/kvlog/formatter/terminal"
+	"github.com/halimath/kvlog/handler"
+	"github.com/halimath/kvlog/msg"
+)
+
+var (
+	version string = "0.0.0"
+	commit  string = "local"
 )
 
 func main() {
+	cfg := config.Provide()
+	if cfg.DevMode {
+		kvlog.Init(handler.New(terminal.Formatter, os.Stdout, filter.Threshold(msg.LevelDebug)))
+	} else {
+		kvlog.Init(handler.New(jsonl.New(), os.Stdout, filter.Threshold(msg.LevelInfo)))
+	}
+
 	controller := control.Provide()
-	httpServer := boundary.ProvideHTTPServer(controller)
+	httpServer := boundary.Provide(cfg, controller, version, commit)
 
 	kvlog.Info(kvlog.Evt("startup"))
 
@@ -33,7 +52,7 @@ func main() {
 
 	go func() {
 		kvlog.Info(kvlog.Evt("httpListen"), kvlog.KV("addr", ":8080"))
-		err := httpServer.ListenAndServe()
+		err := httpServer.Start(fmt.Sprintf(":%d", cfg.HTTPPort))
 		if err != http.ErrServerClosed {
 			kvlog.Error(kvlog.Evt("httpServerFailedToStart"), kvlog.Err(err))
 			termChan <- 1

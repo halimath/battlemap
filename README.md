@@ -1,7 +1,7 @@
-# battle-map
+# battlemap
 
-[![CI Status](https://github.com/halimath/battle-map/workflows/CI/badge.svg)](https://github.com/halimath/battle-map/actions/workflows/ci.yml)
-[![CD Status](https://github.com/halimath/battle-map/workflows/CD/badge.svg)](https://github.com/halimath/battle-map/actions/workflows/cd.yml)
+[![CI Status](https://github.com/halimath/battlemap/workflows/CI/badge.svg)](https://github.com/halimath/battlemap/actions/workflows/ci.yml)
+[![CD Status](https://github.com/halimath/battlemap/workflows/CD/badge.svg)](https://github.com/halimath/battlemap/actions/workflows/cd.yml)
 
 A virtual table top (VTT) web-based battle map editor and viewer for playing role-playing games remotely, 
 specificially targetting [Fate Core](https://www.evilhat.com/home/fate-core/) (but works with any rpg).
@@ -20,8 +20,8 @@ players view.
 
 # Development
 
-The backend is implemented using TypeScript and Nodejs. The frontend is implemented using
-TypeScript and the [wecco framework](https://github.com/weccoframework/core). Almost all CSS is coming from
+The backend is implemented using Golang. The frontend is implemented using TypeScript and the 
+[wecco framework](https://github.com/weccoframework/core). Almost all CSS is coming from 
 [Tailwind](https://tailwindcss.com/) with minimal CSS being written to embed the Fate Core font for displaying
 dice results. The battlemap editor and viewer are created as a separate module and are published as web
 components for easy embedding in other apps. The canvas drawing is handled by [`@halimath/scenic](./scenic)

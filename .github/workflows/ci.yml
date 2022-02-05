@@ -14,18 +14,19 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: "16"
           cache: npm
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.17'
-      
+          go-version: "1.18.0-beta2"
+          stable: false
+
       - name: Install dependencies for @halimath/scenic
         working-directory: ./scenic
         run: npm i
-        
+
       - name: Build @halimath/scenic
         working-directory: ./scenic
         run: npm run build
@@ -41,6 +42,10 @@ jobs:
       - name: Install dependencies for app
         working-directory: ./app
         run: npm i
+
+      - name: Generate API client
+        working-directory: ./app
+        run: npm run generate-api-client
 
       - name: Build app
         working-directory: ./app

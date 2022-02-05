@@ -1,8 +1,7 @@
 import * as wecco from "@weccoframework/core"
 import * as scenic from "@halimath/scenic"
 
-import { GridSize } from "../shapes"
-import { BattleMap, createScene, ViewportChangedEvent, ViewportChangedEventDetails } from "../core"
+import { BattleMap, createScene, ViewportChangedEvent, ViewportChangedEventDetails, GridSize } from "../core"
 
 import styles from "./viewer.css"
 
@@ -23,7 +22,7 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: w
                 scene: createScene(data),
                 viewport: data.viewport ?? scenic.Viewport.create({
                     origin: [5, 5],
-                }),    
+                }),
                 move: true,
                 select: false,
                 resize: true,
@@ -41,7 +40,7 @@ export const Viewer = wecco.define("battlemap-viewer", (data: ViewerData, ctx: w
             s.scene = createScene(data)
             s.viewport = data.viewport ?? s.viewport
             s.grid = data.grid ?? false
-        }    
+        }
     }
 
     return wecco.shadow(wecco.html`
@@ -60,7 +59,7 @@ function toolbar(data: ViewerData, ctx: wecco.RenderContext): wecco.ElementUpdat
     `
 }
 
-function toggleFullscreen (data: ViewerData, ctx: wecco.RenderContext, evt: Event) {
+function toggleFullscreen(data: ViewerData, ctx: wecco.RenderContext, evt: Event) {
     if (data.fullscreen) {
         data.fullscreen = false
         document.exitFullscreen()

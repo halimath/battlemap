@@ -1,61 +1,71 @@
 import * as battlemap from "@halimath/battlemap"
 import * as wecco from "@weccoframework/core"
 import { showNotification } from "./notification"
+
+import "material-icons/iconfont/material-icons.css"
 import "./index.css"
+import { ApiClient, BattleMap as BattleMapDto, Drawing, Token, Zone } from "../generated"
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    let apiClient = new ApiClient({
+        BASE: "/api",
+    })
+
     let id: string
-    let ws: WebSocket
 
-    const init = (evt: CustomEvent) => {
+    const init = (viewer: boolean, evt: CustomEvent) => {
         const editor = evt.target as wecco.WeccoElement<battlemap.EditorData>
 
-        editor.addEventListener(battlemap.BattleMapUpdatedEvent, (evt: Event) => {
-            ws.send(battlemap.marshalBattleMap((evt as CustomEvent).detail as battlemap.BattleMap))
-        })
-
-        ws.addEventListener("message", msg => {
-            try {
-                const map = battlemap.unmarshalBattleMap(msg.data)
+        if (viewer) {
+            setInterval(async () => {
+                const dto = await apiClient.battleMap.getBattleMap({
+                    id: id
+                })
+                const map = fromDto(dto)
                 editor.setData(map)
-            } catch (e) {
-                console.error(e)
-            }
-        })        
-    }        
+            }, 5000)
+        } else {
+            editor.addEventListener(battlemap.BattleMapUpdatedEvent, (evt: Event) => {
+                apiClient.battleMap.updateBattleMap({
+                    id: id,
+                    requestBody: toDto(id, (evt as CustomEvent).detail as battlemap.BattleMap)
+                })
+            })
+        }
+    }
 
-    if (document.location.pathname.startsWith("/view/")) {        
+    if (document.location.pathname.startsWith("/view/")) {
         id = document.location.pathname.substring("/view/".length)
-        ws = new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/ws/view/${id}`)
 
         wecco.updateElement("#app", wecco.html`
             ${appbar(id, false)}
-            <battlemap-viewer @update=${init}></battlemap-viewer>
-        `)        
+            <battlemap-viewer @update=${init.bind(null, true)}></battlemap-viewer>
+        `)
     } else if (document.location.pathname.startsWith("/edit/")) {
         id = document.location.pathname.substring("/edit/".length)
-        ws = new WebSocket(`ws${document.location.protocol.substring(4)}//${document.location.host}/ws/edit/${id}`)
+        const token = await apiClient.authorization.createAuthToken()
+        apiClient = new ApiClient({
+            BASE: "/api",
+            TOKEN: token,
+            CREDENTIALS: "include",
+            WITH_CREDENTIALS: true,
+        })
 
         wecco.updateElement("#app", wecco.html`
             ${appbar(id, true)}
-            <battlemap-editor @update=${init}></battlemap-editor>
-        `)        
-
+            <battlemap-editor @update=${init.bind(null, false)}></battlemap-editor>
+        `)
     } else {
         document.location.href = `/edit/${randomId()}`
         return
     }
-
-    ws.addEventListener("close", () => {
-        showNotification("The editor closed the map.")
-    })    
 })
 
 function copyShareLink(id: string, evt: Event) {
     evt.preventDefault()
     evt.stopPropagation()
     evt.stopImmediatePropagation()
-    
+
     navigator.clipboard.writeText(shareUrl(id))
     showNotification("Url to join the map has been copied to your clipboard.")
 }
@@ -90,4 +100,73 @@ function randomId(): string {
         id += IdAlphabet.charAt(Math.random() * IdAlphabet.length)
     }
     return id
+}
+
+function toDto(id: string, m: battlemap.BattleMap): BattleMapDto {
+    return {
+        id: id,
+        grid: m.grid ?? false,
+        drawings: m.drawings?.map(drawingToDto) ?? [],
+        zones: m.zones?.map(zoneToDto) ?? [],
+        tokens: m.tokens?.map(tokenToDto) ?? [],
+    }
+}
+
+function drawingToDto(shape: battlemap.Drawing): Drawing {
+    return {
+        id: shape.id,
+        at: [shape.at.x, shape.at.y],
+        points: shape.points.map(p => [p.x, p.y]),
+    }
+}
+
+function zoneToDto(shape: battlemap.Zone): Zone {
+    return {
+        id: shape.id,
+        at: [shape.at.x, shape.at.y],
+        size: [shape.size.x, shape.size.y],
+        label: shape.label,
+    }
+}
+
+function tokenToDto(shape: battlemap.Token): Token {
+    return {
+        id: shape.id,
+        at: [shape.at.x, shape.at.y],
+        color: shape.color.toHex(),
+    }
+}
+
+function fromDto(dto: BattleMapDto): battlemap.BattleMap {
+    return {
+        grid: dto.grid,
+        drawings: dto.drawings.map(drawingFromDto),
+        zones: dto.zones.map(zoneFromDto),
+        tokens: dto.tokens.map(tokenFromDto),
+    }
+}
+
+function drawingFromDto(dto: Drawing): battlemap.Drawing {
+    return battlemap.Drawing.create({
+        id: dto.id,
+        at: dto.at as [number, number],
+        points: dto.points as Array<[number, number]>,
+    })
+}
+
+function zoneFromDto(dto: Zone): battlemap.Zone {
+    return battlemap.Zone.create({
+        id: dto.id,
+        at: dto.at as [number, number],
+        size: dto.size as [number, number],
+        label: dto.label,
+    })
+}
+
+function tokenFromDto(dto: Token): battlemap.Token {
+    return battlemap.Token.create({
+        id: dto.id,
+        at: dto.at as [number, number],
+        color: dto.color,
+    })
 }
