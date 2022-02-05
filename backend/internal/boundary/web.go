@@ -71,6 +71,8 @@ func handleError(err error, ctx echo.Context) {
 		e.Error = fmt.Sprintf("%s", httpError.Message)
 	} else if errors.Is(err, control.ErrNotExists) {
 		e.Code = http.StatusNotFound
+	} else if errors.Is(err, control.ErrForbidden) {
+		e.Code = http.StatusForbidden
 	}
 
 	ctx.JSON(e.Code, e)

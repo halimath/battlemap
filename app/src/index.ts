@@ -13,17 +13,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let id: string
 
-    const init = (viewer: boolean, evt: CustomEvent) => {
+    const init = async (viewer: boolean, evt: CustomEvent) => {
         const editor = evt.target as wecco.WeccoElement<battlemap.EditorData>
 
         if (viewer) {
-            setInterval(async () => {
+            const fetchUpdate = async () => {
                 const dto = await apiClient.battleMap.getBattleMap({
                     id: id
                 })
                 const map = fromDto(dto)
                 editor.setData(map)
-            }, 5000)
+            }
+
+            setInterval(fetchUpdate, 5000)
+            fetchUpdate()
         } else {
             editor.addEventListener(battlemap.BattleMapUpdatedEvent, (evt: Event) => {
                 apiClient.battleMap.updateBattleMap({
@@ -31,6 +34,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                     requestBody: toDto(id, (evt as CustomEvent).detail as battlemap.BattleMap)
                 })
             })
+
+            try {
+                const dto = await apiClient.battleMap.getBattleMap({
+                    id: id
+                })
+                const map = fromDto(dto)
+                editor.setData(map)
+            } catch (e) {
+                apiClient.battleMap.updateBattleMap({
+                    id: id,
+                    requestBody: toDto(id, {})
+                })
+            }
         }
     }
 
@@ -43,13 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         `)
     } else if (document.location.pathname.startsWith("/edit/")) {
         id = document.location.pathname.substring("/edit/".length)
-        const token = await apiClient.authorization.createAuthToken()
-        apiClient = new ApiClient({
-            BASE: "/api",
-            TOKEN: token,
-            CREDENTIALS: "include",
-            WITH_CREDENTIALS: true,
-        })
+        apiClient = await authorize()
 
         wecco.updateElement("#app", wecco.html`
             ${appbar(id, true)}
@@ -60,6 +70,36 @@ document.addEventListener("DOMContentLoaded", async () => {
         return
     }
 })
+
+const AuthTokenSessionStorageKey = "auth-token"
+
+async function authorize(): Promise<ApiClient> {
+    let authToken = sessionStorage.getItem(AuthTokenSessionStorageKey)
+    let apiClient: ApiClient
+
+    if (authToken !== null) {
+        apiClient = new ApiClient({
+            BASE: "/api",
+            TOKEN: authToken,
+            CREDENTIALS: "include",
+            WITH_CREDENTIALS: true,
+        })
+    } else {
+        apiClient = new ApiClient({
+            BASE: "/api",
+        })
+    }
+
+    const token = await apiClient.authorization.createAuthToken()
+    sessionStorage.setItem(AuthTokenSessionStorageKey, token)
+
+    return new ApiClient({
+        BASE: "/api",
+        TOKEN: token,
+        CREDENTIALS: "include",
+        WITH_CREDENTIALS: true,
+    })
+}
 
 function copyShareLink(id: string, evt: Event) {
     evt.preventDefault()
