@@ -31,6 +31,7 @@ are relatively stable.
 ## Local Environment
 
 For being able to develop the app, you should have a local install of
+* Golang >= 1.18beta2
 * Node v16
 * NPM (>=8.1)
 
@@ -41,17 +42,23 @@ To start development, you need to open four terminal (tabs) for each of the foll
 * scenic
 * battlemap
 * app
-* service
+* backend
 
-Run the following command in each of the terminals:
+Run the following command in each of the first three terminals:
 
 ```shell
 $ npm i
 $ npm start
 ```
 
-This will start the dev server and bring up the app on `localhost:3000`. The backend runs on `localhost:8080`
-but only the websockets part is needed.
+and run 
+
+```shell
+$ go run .
+```
+
+in the third one. This will start the dev server and bring up the app on `localhost:3000`. The backend runs on
+`localhost:8080` but only the rest api backend part is needed.
 
 ## CI/CD
 
@@ -64,7 +71,7 @@ the container image and publish it to [https://ghcr.io](https://github.com/featu
 
 # License
 
-Copyright 2021 Alexander Metzner.
+Copyright 2021, 2022 Alexander Metzner.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
