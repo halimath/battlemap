@@ -54,7 +54,7 @@ func (h *restHandler) CreateAuthToken(ctx echo.Context) error {
 }
 
 func (h *restHandler) GetBattleMap(ctx echo.Context, id string) error {
-	bm, lastModified, err := h.controller.Load(ctx.Request().Context(), id)
+	bm, err := h.controller.Load(ctx.Request().Context(), id)
 	if err != nil {
 		return err
 	}
@@ -63,14 +63,14 @@ func (h *restHandler) GetBattleMap(ctx echo.Context, id string) error {
 	if ifModifiedSince != "" {
 		cacheDate, err := time.Parse(time.RFC1123, ifModifiedSince)
 		if err == nil {
-			if !cacheDate.UTC().Truncate(time.Second).Before(lastModified.UTC().Truncate(time.Second)) {
+			if !cacheDate.UTC().Truncate(time.Second).Before(bm.LastModified.UTC().Truncate(time.Second)) {
 				return ctx.NoContent(http.StatusNotModified)
 			}
 		}
 	}
 
 	header := ctx.Response().Header()
-	header.Add("Last-Modified", lastModified.In(GMT).Format(time.RFC1123))
+	header.Add("Last-Modified", bm.LastModified.In(GMT).Format(time.RFC1123))
 	header.Add("Cache-Control", "private; must-revalidate")
 
 	return ctx.JSON(http.StatusOK, convertEntity(bm))
@@ -161,11 +161,14 @@ func convertXYDto(dto XY) battlemap.XY {
 
 func convertEntity(e battlemap.BattleMap) BattleMap {
 	return BattleMap{
-		Id:       e.ID,
-		Grid:     e.Grid,
-		Drawings: convertMany(e.Drawings, convertDrawing),
-		Zones:    convertMany(e.Zones, convertZone),
-		Tokens:   convertMany(e.Tokens, convertToken),
+		BattleMapUpdate: BattleMapUpdate{
+			Id:       e.ID,
+			Grid:     e.Grid,
+			Drawings: convertMany(e.Drawings, convertDrawing),
+			Zones:    convertMany(e.Zones, convertZone),
+			Tokens:   convertMany(e.Tokens, convertToken),
+		},
+		LastModified: e.LastModified,
 	}
 }
 

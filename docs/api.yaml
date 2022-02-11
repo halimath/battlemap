@@ -90,7 +90,7 @@ paths:
         content:
           "application/json":
             schema:
-              $ref: "#/components/schemas/BattleMap"
+              $ref: "#/components/schemas/BattleMapUpdate"
       responses:
         "201":
           description: Successful response
@@ -151,7 +151,7 @@ components:
         - apiVersion
         - commit
 
-    BattleMap:
+    BattleMapUpdate:
       type: object
       properties:
         id:
@@ -176,6 +176,18 @@ components:
         - drawings
         - zones
         - tokens
+
+    BattleMap:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/BattleMapUpdate"
+        - type: object
+          properties:
+            lastModified:
+              type: string
+              format: date-time
+          required:
+            - lastModified
 
     XY:
       type: array

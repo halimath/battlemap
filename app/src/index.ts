@@ -4,7 +4,7 @@ import { showNotification } from "./notification"
 
 import "material-icons/iconfont/material-icons.css"
 import "./index.css"
-import { ApiClient, BattleMap as BattleMapDto, Drawing, Token, Zone } from "../generated"
+import { ApiClient, BattleMap as BattleMapDto, BattleMapUpdate, Drawing, Token, Zone } from "../generated"
 
 document.addEventListener("DOMContentLoaded", async () => {
     let apiClient = new ApiClient({
@@ -17,15 +17,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         const editor = evt.target as wecco.WeccoElement<battlemap.EditorData>
 
         if (viewer) {
+            let mapLastModified: string | null = null
+
             const fetchUpdate = async () => {
                 const dto = await apiClient.battleMap.getBattleMap({
                     id: id
                 })
+
+                if (dto.lastModified === mapLastModified) {
+                    return
+                }
+
+                mapLastModified = dto.lastModified
                 const map = fromDto(dto)
                 editor.setData(map)
             }
 
-            setInterval(fetchUpdate, 5000)
+            setInterval(fetchUpdate, 1000)
             fetchUpdate()
         } else {
             editor.addEventListener(battlemap.BattleMapUpdatedEvent, (evt: Event) => {
@@ -142,7 +150,7 @@ function randomId(): string {
     return id
 }
 
-function toDto(id: string, m: battlemap.BattleMap): BattleMapDto {
+function toDto(id: string, m: battlemap.BattleMap): BattleMapUpdate {
     return {
         id: id,
         grid: m.grid ?? false,

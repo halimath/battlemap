@@ -1,11 +1,14 @@
 package battlemap
 
+import "time"
+
 type BattleMap struct {
-	ID       string
-	Grid     bool
-	Drawings []Drawing
-	Zones    []Zone
-	Tokens   []Token
+	ID           string
+	LastModified time.Time
+	Grid         bool
+	Drawings     []Drawing
+	Zones        []Zone
+	Tokens       []Token
 }
 
 type XY [2]int

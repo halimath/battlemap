@@ -6,6 +6,7 @@ package boundary
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
@@ -17,6 +18,14 @@ const (
 
 // BattleMap defines model for BattleMap.
 type BattleMap struct {
+	// Embedded struct due to allOf(#/components/schemas/BattleMapUpdate)
+	BattleMapUpdate `yaml:",inline"`
+	// Embedded fields due to inline allOf schema
+	LastModified time.Time `json:"lastModified"`
+}
+
+// BattleMapUpdate defines model for BattleMapUpdate.
+type BattleMapUpdate struct {
 	Drawings []Drawing `json:"drawings"`
 	Grid     bool      `json:"grid"`
 	Id       string    `json:"id"`
@@ -73,7 +82,7 @@ type Zone struct {
 }
 
 // UpdateBattleMapJSONBody defines parameters for UpdateBattleMap.
-type UpdateBattleMapJSONBody BattleMap
+type UpdateBattleMapJSONBody BattleMapUpdate
 
 // UpdateBattleMapJSONRequestBody defines body for UpdateBattleMap for application/json ContentType.
 type UpdateBattleMapJSONRequestBody UpdateBattleMapJSONBody

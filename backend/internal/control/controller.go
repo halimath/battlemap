@@ -15,10 +15,9 @@ var (
 )
 
 type battleMapEntry struct {
-	lock         sync.Mutex
-	data         battlemap.BattleMap
-	lastModified time.Time
-	userID       string
+	lock   sync.Mutex
+	data   battlemap.BattleMap
+	userID string
 }
 
 // --
@@ -48,21 +47,21 @@ func (c *BattleMapController) Update(ctx context.Context, userID string, data ba
 	defer e.lock.Unlock()
 
 	e.data = data
-	e.lastModified = time.Now()
+	e.data.LastModified = time.Now()
 
 	return nil
 }
 
-func (c *BattleMapController) Load(ctx context.Context, id string) (battlemap.BattleMap, time.Time, error) {
+func (c *BattleMapController) Load(ctx context.Context, id string) (battlemap.BattleMap, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	e, ok := c.maps[id]
 	if !ok {
-		return battlemap.BattleMap{}, time.Time{}, ErrNotExists
+		return battlemap.BattleMap{}, ErrNotExists
 	}
 
-	return e.data, e.lastModified, nil
+	return e.data, nil
 }
 
 func Provide() *BattleMapController {
