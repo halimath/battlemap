@@ -33,7 +33,7 @@ RUN npm run build
 
 FROM golang:1.18-rc-alpine AS GO_BUILDER
 
-ARG version=0.3.1
+ARG version=0.3.2
 ARG commit=local
 
 WORKDIR /app
