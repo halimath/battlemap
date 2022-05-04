@@ -508,6 +508,10 @@ export class Scenic {
     }
 
     private finishDraw(p: Point) {
+        if (this.drawnPoints === null) {
+            return
+        }
+        
         this.drawnPoints!.push(this.viewport.toCoordinateSpace(p))
         this.emit({
             eventName: "drawingFinished",

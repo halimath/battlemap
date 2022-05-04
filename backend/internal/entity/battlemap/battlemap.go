@@ -11,23 +11,23 @@ type BattleMap struct {
 	Tokens       []Token
 }
 
-type XY [2]int
+type Vertex [2]float32
 
 type Drawing struct {
-	ID     string
-	At     XY
-	Points []XY
+	ID       string
+	At       Vertex
+	Vertices []Vertex
 }
 
 type Zone struct {
 	ID    string
-	At    XY
-	Size  XY
+	At    Vertex
+	Size  Vertex
 	Label string
 }
 
 type Token struct {
 	ID    string
-	At    XY
+	At    Vertex
 	Color string
 }

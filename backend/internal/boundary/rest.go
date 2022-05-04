@@ -122,9 +122,9 @@ func convertMany[I, O any](is []I, mapper func(i I) O) []O {
 
 func convertDrawingDto(d Drawing) battlemap.Drawing {
 	return battlemap.Drawing{
-		ID:     d.Id,
-		At:     convertXYDto(d.At),
-		Points: convertXYDtos(d.Points),
+		ID:       d.Id,
+		At:       convertXYDto(d.At),
+		Vertices: convertXYDtos(d.Vertices),
 	}
 }
 
@@ -145,8 +145,8 @@ func convertTokenDto(t Token) battlemap.Token {
 	}
 }
 
-func convertXYDtos(dtos []XY) []battlemap.XY {
-	r := make([]battlemap.XY, len(dtos))
+func convertXYDtos(dtos []Vertex) []battlemap.Vertex {
+	r := make([]battlemap.Vertex, len(dtos))
 
 	for i, dto := range dtos {
 		r[i] = convertXYDto(dto)
@@ -155,8 +155,8 @@ func convertXYDtos(dtos []XY) []battlemap.XY {
 	return r
 }
 
-func convertXYDto(dto XY) battlemap.XY {
-	return battlemap.XY{dto[0], dto[1]}
+func convertXYDto(dto Vertex) battlemap.Vertex {
+	return battlemap.Vertex{dto[0], dto[1]}
 }
 
 func convertEntity(e battlemap.BattleMap) BattleMap {
@@ -174,29 +174,29 @@ func convertEntity(e battlemap.BattleMap) BattleMap {
 
 func convertDrawing(d battlemap.Drawing) Drawing {
 	return Drawing{
-		Id:     d.ID,
-		At:     convertXY(d.At),
-		Points: convertMany(d.Points, convertXY),
+		Id:       d.ID,
+		At:       convertVertex(d.At),
+		Vertices: convertMany(d.Vertices, convertVertex),
 	}
 }
 
 func convertZone(z battlemap.Zone) Zone {
 	return Zone{
 		Id:    z.ID,
-		At:    convertXY(z.At),
+		At:    convertVertex(z.At),
 		Label: z.Label,
-		Size:  convertXY(z.Size),
+		Size:  convertVertex(z.Size),
 	}
 }
 
 func convertToken(t battlemap.Token) Token {
 	return Token{
 		Id:    t.ID,
-		At:    convertXY(t.At),
+		At:    convertVertex(t.At),
 		Color: t.Color,
 	}
 }
 
-func convertXY(x battlemap.XY) XY {
-	return XY{x[0], x[1]}
+func convertVertex(x battlemap.Vertex) Vertex {
+	return Vertex{x[0], x[1]}
 }

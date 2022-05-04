@@ -35,9 +35,9 @@ type BattleMapUpdate struct {
 
 // Drawing defines model for Drawing.
 type Drawing struct {
-	At     XY     `json:"at"`
-	Id     string `json:"id"`
-	Points []XY   `json:"points"`
+	At       Vertex   `json:"at"`
+	Id       string   `json:"id"`
+	Vertices []Vertex `json:"vertices"`
 }
 
 // Error defines model for Error.
@@ -52,7 +52,7 @@ type Error struct {
 
 // Token defines model for Token.
 type Token struct {
-	At    XY     `json:"at"`
+	At    Vertex `json:"at"`
 	Color string `json:"color"`
 	Id    string `json:"id"`
 }
@@ -70,15 +70,15 @@ type VersionInfo struct {
 	Version string `json:"version"`
 }
 
-// XY defines model for XY.
-type XY []int
+// Vertex defines model for Vertex.
+type Vertex []float32
 
 // Zone defines model for Zone.
 type Zone struct {
-	At    XY     `json:"at"`
+	At    Vertex `json:"at"`
 	Id    string `json:"id"`
 	Label string `json:"label"`
-	Size  XY     `json:"size"`
+	Size  Vertex `json:"size"`
 }
 
 // UpdateBattleMapJSONBody defines parameters for UpdateBattleMap.

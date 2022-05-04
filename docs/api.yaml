@@ -189,10 +189,11 @@ components:
           required:
             - lastModified
 
-    XY:
+    Vertex:
       type: array
       items:
-        type: integer
+        type: number
+        format: float
       maxItems: 2
       minItems: 2
 
@@ -202,15 +203,15 @@ components:
         id:
           type: string
         at:
-          $ref: "#/components/schemas/XY"
-        points:
+          $ref: "#/components/schemas/Vertex"
+        vertices:
           type: array
           items:
-            $ref: "#/components/schemas/XY"
+            $ref: "#/components/schemas/Vertex"
       required:
         - id
         - at
-        - points
+        - vertices
 
     Zone:
       type: object
@@ -218,9 +219,9 @@ components:
         id:
           type: string
         at:
-          $ref: "#/components/schemas/XY"
+          $ref: "#/components/schemas/Vertex"
         size:
-          $ref: "#/components/schemas/XY"
+          $ref: "#/components/schemas/Vertex"
         label:
           type: string
       required:
@@ -235,7 +236,7 @@ components:
         id:
           type: string
         at:
-          $ref: "#/components/schemas/XY"
+          $ref: "#/components/schemas/Vertex"
         color:
           type: string
       required:

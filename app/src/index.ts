@@ -164,7 +164,7 @@ function drawingToDto(shape: battlemap.Drawing): Drawing {
     return {
         id: shape.id,
         at: [shape.at.x, shape.at.y],
-        points: shape.points.map(p => [p.x, p.y]),
+        vertices: shape.points.map(p => [p.x, p.y]),
     }
 }
 
@@ -198,7 +198,7 @@ function drawingFromDto(dto: Drawing): battlemap.Drawing {
     return battlemap.Drawing.create({
         id: dto.id,
         at: dto.at as [number, number],
-        points: dto.points as Array<[number, number]>,
+        points: dto.vertices as Array<[number, number]>,
     })
 }
 
